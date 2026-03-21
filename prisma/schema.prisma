@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum TagStatus {
+  active
+  pending
+}
+
+enum PipelineLogType {
+  scraper
+  embedding
+  grouping
+  gpt
+  quality
+  admin
+}
+
+// ─── Models ──────────────────────────────────────────────
+
+model Channel {
+  id          String   @id @default(uuid()) @db.Uuid
+  username    String   @unique
+  displayName String?  @map("display_name")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  categoryMap ChannelCategoryMap[]
+  rawPosts    RawPost[]
+  postSources PostSource[]
+
+  @@map("channels")
+}
+
+model ChannelCategory {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  categoryMap ChannelCategoryMap[]
+
+  @@map("channel_categories")
+}
+
+model ChannelCategoryMap {
+  categoryId String @map("category_id") @db.Uuid
+  channelId  String @map("channel_id") @db.Uuid
+
+  category ChannelCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  channel  Channel         @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, channelId])
+  @@map("channel_category_map")
+}
+
+model TagCategory {
+  id        String @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String @unique
+  sortOrder Int    @default(0) @map("sort_order")
+
+  tags Tag[]
+
+  @@map("tag_categories")
+}
+
+model Tag {
+  id         String    @id @default(uuid()) @db.Uuid
+  categoryId String    @map("category_id") @db.Uuid
+  name       String
+  slug       String    @unique
+  status     TagStatus @default(pending)
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  category TagCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  postTags PostTag[]
+
+  @@index([status], map: "idx_tags_status")
+  @@index([categoryId], map: "idx_tags_category")
+  @@map("tags")
+}
+
+model RawPost {
+  id        String    @id @default(uuid()) @db.Uuid
+  channelId String    @map("channel_id") @db.Uuid
+  messageId Int       @map("message_id")
+  text      String?
+  mediaUrl  String?   @map("media_url")
+  postedAt  DateTime? @map("posted_at")
+  embedding Bytes?
+  postId    String?   @map("post_id") @db.Uuid
+  processed Boolean   @default(false)
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  post    Post?   @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  @@unique([channelId, messageId], map: "idx_raw_channel_msg")
+  @@index([processed], map: "idx_raw_processed")
+  @@index([postedAt], map: "idx_raw_posted_at")
+  @@map("raw_posts")
+}
+
+model Post {
+  id                String   @id @default(uuid()) @db.Uuid
+  summary           String?
+  summaryScore      Float?   @map("summary_score")
+  createdAt         DateTime @default(now()) @map("created_at")
+  isDeleted         Boolean  @default(false) @map("is_deleted")
+  isManuallyEdited  Boolean  @default(false) @map("is_manually_edited")
+  isManuallyGrouped Boolean  @default(false) @map("is_manually_grouped")
+
+  rawPosts    RawPost[]
+  postSources PostSource[]
+  postTags    PostTag[]
+  pipelineLogs PipelineLog[]
+
+  @@index([createdAt], map: "idx_posts_created")
+  @@index([isDeleted], map: "idx_posts_deleted")
+  @@map("posts")
+}
+
+model PostSource {
+  id           String @id @default(uuid()) @db.Uuid
+  postId       String @map("post_id") @db.Uuid
+  channelId    String @map("channel_id") @db.Uuid
+  messageId    Int    @map("message_id")
+  originalText String? @map("original_text")
+  tgUrl        String? @map("tg_url")
+
+  post    Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([postId], map: "idx_post_sources_post")
+  @@map("post_sources")
+}
+
+model PostTag {
+  id     String @id @default(uuid()) @db.Uuid
+  postId String @map("post_id") @db.Uuid
+  tagId  String @map("tag_id") @db.Uuid
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@index([postId], map: "idx_post_tags_post")
+  @@index([tagId], map: "idx_post_tags_tag")
+  @@map("post_tags")
+}
+
+model AdminSetting {
+  key   String @id
+  value String
+
+  @@map("admin_settings")
+}
+
+model PipelineLog {
+  id        String          @id @default(uuid()) @db.Uuid
+  type      PipelineLogType
+  postId    String?         @map("post_id") @db.Uuid
+  payload   Json
+  createdAt DateTime        @default(now()) @map("created_at")
+
+  post Post? @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  @@index([type], map: "idx_pipeline_logs_type")
+  @@index([postId], map: "idx_pipeline_logs_post")
+  @@index([createdAt], map: "idx_pipeline_logs_created")
+  @@map("pipeline_logs")
+}

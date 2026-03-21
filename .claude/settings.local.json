@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npx tsx:*)",
+      "Bash(node -e \":*)",
+      "Bash(ls:*)",
+      "Bash(npm ls:*)",
+      "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"дозволяю\" npx prisma migrate reset --force 2>&1)",
+      "Bash(pip3 install:*)",
+      "Bash(python3:*)",
+      "Bash(expect:*)",
+      "Bash(chmod:*)",
+      "Bash(npx shadcn@latest init -d)"
+    ]
+  }
+}
