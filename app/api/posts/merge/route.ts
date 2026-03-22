@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
+import { logPipeline } from "../../../../lib/logger";
 import { generateSummaryForGroup } from "../../../../lib/openai";
 import { getActiveTagsList } from "../../../../lib/prompts";
 
@@ -78,6 +79,8 @@ export async function POST(request: NextRequest) {
       _count: { select: { postSources: true } },
     },
   });
+
+  await logPipeline("admin", targetId, { action: "merge_posts", details: { sourcePostIds: sourceIds, targetPostId: targetId } });
 
   return NextResponse.json(result);
 }

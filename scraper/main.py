@@ -3,9 +3,10 @@ Telegram scraper for affcritic.
 Reads active channels from DB, fetches new posts via telethon,
 writes them to raw_posts table. All further processing is done in TypeScript.
 
-Usage: python scraper/main.py
+Usage: python scraper/main.py [--hours N]
 """
 
+import argparse
 import asyncio
 import json
 import os
@@ -88,6 +89,16 @@ def get_existing_message_ids(conn, channel_id: str) -> set[int]:
         return {row[0] for row in cur.fetchall()}
 
 
+def get_blocked_message_ids(conn, channel_id: str) -> set[int]:
+    """Fetch blocked message_ids for a channel (deleted posts that should not be re-added)."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT message_id FROM blocked_posts WHERE channel_id = %s",
+            (channel_id,),
+        )
+        return {row[0] for row in cur.fetchall()}
+
+
 def insert_pipeline_log(conn, payload: dict) -> None:
     """Write a scraper log entry to pipeline_logs."""
     with conn.cursor() as cur:
@@ -131,10 +142,11 @@ def extract_media_url(message) -> str | None:
 
 
 async def scrape_channel(client: TelegramClient, conn,
-                         channel_id: str, username: str) -> dict:
+                         channel_id: str, username: str,
+                         lookback_hours: int = LOOKBACK_HOURS) -> dict:
     """Scrape a single channel. Returns stats dict."""
     stats = {"read": 0, "new": 0, "skipped": 0, "errors": 0, "error_details": []}
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=LOOKBACK_HOURS)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=lookback_hours)
 
     try:
         entity = await client.get_entity(username)
@@ -149,9 +161,20 @@ async def scrape_channel(client: TelegramClient, conn,
         stats["errors"] = 1
         stats["error_details"].append({"channel": f"@{username}", "error": f"FloodWait {e.seconds}s"})
         return stats
+    except (ConnectionError, OSError) as e:
+        print(f"  [ERROR] @{username}: Connection error: {e}")
+        stats["errors"] = 1
+        stats["error_details"].append({"channel": f"@{username}", "error": f"ConnectionError: {e}"})
+        return stats
+    except Exception as e:
+        print(f"  [ERROR] @{username}: {type(e).__name__}: {e}")
+        stats["errors"] = 1
+        stats["error_details"].append({"channel": f"@{username}", "error": f"{type(e).__name__}: {e}"})
+        return stats
 
-    # Pre-fetch existing message_ids to skip known posts without INSERT attempts
+    # Pre-fetch existing and blocked message_ids to skip known/blocked posts
     existing_ids = get_existing_message_ids(conn, channel_id)
+    blocked_ids = get_blocked_message_ids(conn, channel_id)
 
     try:
         async for message in client.iter_messages(entity, limit=POSTS_LIMIT):
@@ -163,6 +186,11 @@ async def scrape_channel(client: TelegramClient, conn,
 
             stats["read"] += 1
 
+            # Skip blocked posts (deleted from feed by admin)
+            if message.id in blocked_ids:
+                stats["skipped"] += 1
+                continue
+
             # Skip early if already in DB (avoids unnecessary INSERT)
             if message.id in existing_ids:
                 stats["skipped"] += 1
@@ -170,11 +198,13 @@ async def scrape_channel(client: TelegramClient, conn,
 
             try:
                 media_url = extract_media_url(message)
+                # Store None instead of empty string for text
+                text = message.text if message.text else None
                 inserted = insert_raw_post(
                     conn,
                     channel_id=channel_id,
                     message_id=message.id,
-                    text=message.text,
+                    text=text,
                     media_url=media_url,
                     posted_at=message.date,
                 )
@@ -200,8 +230,9 @@ async def scrape_channel(client: TelegramClient, conn,
 
 # ─── Main ────────────────────────────────────────────────
 
-async def main():
+async def main(lookback_hours: int = LOOKBACK_HOURS):
     start_time = time.monotonic()
+    print(f"Lookback: {lookback_hours} hours")
     conn = psycopg2.connect(DATABASE_URL)
 
     # Read and log cron interval
@@ -238,7 +269,16 @@ async def main():
 
     for i, ch in enumerate(channels):
         print(f"[{i + 1}/{len(channels)}] @{ch['username']}")
-        stats = await scrape_channel(client, conn, ch["id"], ch["username"])
+
+        # Ensure connection is alive before each channel
+        if not client.is_connected():
+            print("  [RECONNECT] Connection lost, reconnecting...")
+            try:
+                await client.connect()
+            except Exception as e:
+                print(f"  [ERROR] Reconnect failed: {e}")
+
+        stats = await scrape_channel(client, conn, ch["id"], ch["username"], lookback_hours)
         print(f"  Channel @{ch['username']}: {stats['read']} read, {stats['new']} new, {stats['skipped']} skipped"
               + (f", {stats['errors']} errors" if stats["errors"] else ""))
 
@@ -283,8 +323,12 @@ async def main():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="AffCritic Telegram scraper")
+    parser.add_argument("--hours", type=int, default=LOOKBACK_HOURS, help=f"Lookback hours (default: {LOOKBACK_HOURS})")
+    args = parser.parse_args()
+
     try:
-        asyncio.run(main())
+        asyncio.run(main(lookback_hours=args.hours))
     except Exception:
         # Crash handler — try to log fatal error to pipeline_logs
         error_msg = traceback.format_exc()

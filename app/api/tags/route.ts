@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/db";
+import { logPipeline } from "../../../lib/logger";
 import type { Prisma } from "../../../generated/prisma/client";
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
@@ -8,6 +9,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const status = searchParams.get("status"); // active, pending, or null (all)
   const category = searchParams.get("category"); // category slug
+  const search = searchParams.get("search"); // search by name or alias
 
   const where: Prisma.TagWhereInput = {};
 
@@ -17,12 +19,19 @@ export async function GET(request: NextRequest) {
   if (category) {
     where.category = { slug: category };
   }
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: "insensitive" } },
+      { aliases: { some: { alias: { contains: search, mode: "insensitive" } } } },
+    ];
+  }
 
   const tags = await prisma.tag.findMany({
     where,
     orderBy: [{ category: { sortOrder: "asc" } }, { name: "asc" }],
     include: {
       category: { select: { id: true, name: true, slug: true } },
+      aliases: { select: { id: true, alias: true }, orderBy: { alias: "asc" } },
       _count: { select: { postTags: true } },
     },
   });
@@ -33,6 +42,7 @@ export async function GET(request: NextRequest) {
     slug: tag.slug,
     status: tag.status,
     category: tag.category,
+    aliases: tag.aliases,
     postsCount: tag._count.postTags,
     createdAt: tag.createdAt,
   }));
@@ -67,6 +77,8 @@ export async function POST(request: NextRequest) {
   const tag = await prisma.tag.create({
     data: { name, slug, categoryId, status: tagStatus },
   });
+
+  await logPipeline("admin", null, { action: "create_tag", details: { name, slug, categoryId } });
 
   return NextResponse.json(tag, { status: 201 });
 }

@@ -43,6 +43,7 @@ channel_categories (
   id UUID PRIMARY KEY,
   name TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,
+  sort_order INTEGER DEFAULT 0,
   created_at TIMESTAMP DEFAULT now()
 )
 ```
@@ -84,6 +85,19 @@ tags (
   created_at TIMESTAMP DEFAULT now()
 )
 ```
+
+### tag_aliases
+
+```sql
+tag_aliases (
+  id UUID PRIMARY KEY,
+  tag_id UUID REFERENCES tags(id) ON DELETE CASCADE,
+  alias TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT now()
+)
+```
+
+Альтернативні назви тегів. Використовуються в пошуку, автокомпліті та GPT prompt (master-list формат: `Tag Name (aliases: A, B)`).
 
 ### raw_posts
 
@@ -141,6 +155,21 @@ post_tags (
 )
 ```
 
+### blocked_posts
+
+```sql
+blocked_posts (
+  id UUID PRIMARY KEY,
+  channel_id UUID REFERENCES channels(id),
+  message_id INTEGER NOT NULL,
+  reason TEXT,
+  created_at TIMESTAMP DEFAULT now(),
+  UNIQUE (channel_id, message_id)
+)
+```
+
+При видаленні поста з Feed — його sources додаються в `blocked_posts`. Scraper перевіряє цю таблицю і не додає заблоковані повідомлення повторно.
+
 ### admin_settings
 
 ```sql
@@ -178,6 +207,8 @@ CREATE INDEX idx_tags_category ON tags(category_id);
 CREATE INDEX idx_pipeline_logs_type ON pipeline_logs(type);
 CREATE INDEX idx_pipeline_logs_post ON pipeline_logs(post_id);
 CREATE INDEX idx_pipeline_logs_created ON pipeline_logs(created_at);
+CREATE INDEX idx_tag_aliases_tag ON tag_aliases(tag_id);
+CREATE UNIQUE INDEX idx_blocked_channel_msg ON blocked_posts(channel_id, message_id);
 ```
 
 ---
@@ -201,7 +232,7 @@ CRON (2-3 рази/добу, інтервал з admin_settings)
 3. Embedding: text-embedding-3-small → raw_posts.embedding
   │
   ▼
-4. Grouping: cosine similarity vs raw_posts за 48 год
+4. Grouping: cosine similarity vs raw_posts (два пули: згруповані без ліміту часу + незгруповані за 48 год)
    → > 0.83 → join existing group (raw_post.post_id = posts.id)
    → < 0.83 → create new group
    → SKIP if target group is_manually_grouped = true
@@ -249,13 +280,15 @@ GPT output JSON:
 | URL | Що |
 | --- | --- |
 | `/` | Feed — всі пости |
-| `/{folder-slug}/` | Пости з каналів папки |
-| `/{folder-slug}/{channel}/` | Пости одного каналу |
+| `/topics/` | Навігаційний хаб: категорії каналів + теги |
+| `/topics/{slug}/` | Feed постів з каналів категорії |
+| `/channels/` | Каталог каналів зі статистикою |
+| `/channels/{username}/` | Feed постів одного каналу |
 | `/tag/{tag-slug}/` | Entity Feed по тегу |
 | `/about/` | Статична |
 | `/admin/` | Адмін-панель |
 
-Routing `/channels/{slug}/`: спочатку lookup в `channel_categories`, якщо не знайдено → lookup в `channels`. Адмін контролює обидва набори slugs — колізій немає.
+Routing: `/topics/{slug}` — lookup тільки в `channel_categories`. `/channels/{username}` — lookup тільки в `channels`. Колізій немає — різні namespace.
 
 ---
 
@@ -287,9 +320,9 @@ Mobile-first.
 
 ## Admin Panel (`/admin`)
 
-**Канали:** додати/видалити TG-канал, toggle active/inactive
+**Канали:** додати/видалити TG-канал, toggle active/inactive. При додаванні: strip @, multi-select категорій. Сортування newest first.
 
-**Категорії каналів:** CRUD (назва + slug вручну), прив'язка каналів (M2M)
+**Тематики каналів:** CRUD (назва + slug вручну), drag-and-drop сортування (@dnd-kit), sort_order визначає порядок на публічних сторінках.
 
 **Теги:** CRUD категорій і тегів, approve/reject pending, merge дублів
 
@@ -312,39 +345,68 @@ Mobile-first.
 ```jsx
 affcritic/
 ├── app/
-│   ├── page.tsx                           # Feed
+│   ├── layout.tsx                         # Root layout: fonts, FolderNav, AdminWrapper
+│   ├── page.tsx                           # Feed + Sidebar
+│   ├── topics/
+│   │   ├── page.tsx                       # Topics hub: category tiles + tag tiles
+│   │   └── [slug]/page.tsx               # Category feed (channel_categories lookup)
 │   ├── channels/
-│   │   ├── page.tsx                       # Channels list
-│   │   └── [slug]/page.tsx                # Category or Channel page
-│   ├── tag/[slug]/page.tsx                # Entity Feed
-│   ├── about/page.tsx
-│   └── admin/
-│       ├── page.tsx
-│       ├── channels/page.tsx
-│       ├── categories/page.tsx             # Manage channel categories
-│       ├── tags/page.tsx
-│       ├── posts/page.tsx
-│       ├── logs/page.tsx
-│       └── settings/page.tsx
+│   │   ├── page.tsx                       # Channels catalog with stats + sidebar
+│   │   └── [username]/page.tsx           # Channel feed (channels lookup)
+│   ├── tag/[slug]/page.tsx                # Entity Feed по тегу
+│   ├── admin/
+│   │   ├── page.tsx                       # Dashboard: metrics, charts, logs, actions
+│   │   ├── channels/page.tsx
+│   │   ├── topics/page.tsx                # Manage channel categories (DnD sort)
+│   │   ├── tags/page.tsx
+│   │   ├── posts/page.tsx
+│   │   ├── logs/page.tsx
+│   │   └── settings/page.tsx
+│   └── api/
+│       ├── posts/                         # GET list, [id] CRUD, merge, split, exclude, tags
+│       ├── channels/                      # CRUD, stats
+│       ├── folders/                       # Channel categories CRUD + M2M channels + reorder
+│       ├── tags/                          # CRUD, approve, reject, merge, aliases
+│       ├── tag-categories/                # CRUD, reorder
+│       ├── admin/                         # settings, stats, charts
+│       ├── logs/                          # Pipeline logs
+│       ├── pipeline/run/                  # Manual pipeline trigger
+│       └── scraper/run/                   # Manual scraper trigger
 ├── components/
-│   ├── PostCard.tsx
-│   ├── PostSources.tsx
-│   ├── TagChip.tsx
-│   ├── Sidebar.tsx
-│   ├── FolderNav.tsx
-│   └── EntityHeader.tsx
+│   ├── Feed.tsx                           # Server: fetch posts
+│   ├── FeedClient.tsx                     # Client: load more, merge/split, delete
+│   ├── PostCard.tsx                       # Post card з admin controls (edit, tags, delete)
+│   ├── PostInlineEdit.tsx                 # Inline summary editor (admin)
+│   ├── PostTagEditor.tsx                  # Tag autocomplete editor (admin)
+│   ├── PostSources.tsx                    # Expandable sources list
+│   ├── TagChip.tsx                        # Tag badge link
+│   ├── Sidebar.tsx                        # Client: mode="tags" | "channels"
+│   ├── SidebarServer.tsx                  # Server: fetch tags + channel categories
+│   ├── FolderNav.tsx                      # Client: topic/category menu → /topics/{slug}
+│   ├── FolderNavServer.tsx                # Server: fetch categories (sortOrder)
+│   ├── EntityHeader.tsx                   # Tag page header
+│   ├── ChannelsPage.tsx                   # Client: channels catalog with stats table
+│   ├── TopicsPage.tsx                     # Client: topics hub (category + tag tiles)
+│   ├── AdminContext.tsx                   # Admin mode context (?admin=1)
+│   ├── AdminWrapper.tsx                   # Admin context provider (hydration-safe)
+│   └── DashboardCharts.tsx                # Recharts: cost + posts + unprocessed
 ├── lib/
-│   ├── db.ts                              # Prisma client
-│   ├── openai.ts                          # Embedding + GPT
+│   ├── db.ts                              # Prisma client singleton
+│   ├── openai.ts                          # Embedding + GPT + quality
 │   ├── dedup.ts                           # Cosine similarity
 │   ├── grouping.ts                        # Group logic
-│   ├── pipeline.ts                        # Orchestration
+│   ├── pipeline.ts                        # Pipeline orchestration
 │   ├── prompts.ts                         # GPT prompts
-│   └── logger.ts                          # Pipeline logging
+│   ├── logger.ts                          # Pipeline logging
+│   └── utils.ts                           # Tailwind utilities
 ├── prisma/
-│   └── schema.prisma
+│   ├── schema.prisma                      # 13 models (incl. BlockedPost), 2 enums
+│   ├── seed.ts
+│   └── prisma.config.ts
 └── scraper/
-    ├── main.py
+    ├── main.py                            # Telethon scraper + blocked_posts check
+    ├── auth.py
+    ├── cron_runner.sh
     └── requirements.txt
 ```
 
@@ -364,8 +426,12 @@ affcritic/
 10. `pending` теги не показуються на сайті
 11. GPT prompt hardcode в `lib/prompts.ts`, master-list тегів з БД
 12. Python scraper — тільки запис raw_posts, вся обробка — TypeScript
-13. `/channels/{slug}` = category або channel (routing по БД), `/tag/{slug}` = тег
+13. `/topics/{slug}` = category feed, `/channels/{username}` = channel feed, `/tag/{slug}` = тег. Різні namespace, без cascade lookup.
 14. TG посилання: `rel="nofollow noopener noreferrer"` + `target="_blank"`
 15. Summary: російська, 3-5 речень, нейтральний тон
 16. Кожен крок pipeline пише лог в `pipeline_logs`
 17. Логування всіх адмін-дій в `pipeline_logs` (type: admin)
+18. Видалення поста → `is_deleted = true` + sources додаються в `blocked_posts` → scraper не re-додає
+19. Pipeline: media-only raw_posts (text=null) маркуються `processed=true` одразу в embedding кроці
+20. Pipeline: якщо GPT падає для групи → raw_posts не маркуються processed, quality skip
+21. Feed фільтрує `summary IS NOT NULL` — пости без summary не показуються

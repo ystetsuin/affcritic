@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/db";
+import { logPipeline } from "../../../../../lib/logger";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -19,6 +20,8 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
     where: { id },
     data: { status: "active" },
   });
+
+  await logPipeline("admin", null, { action: "approve_tag", details: { id, name: tag.name } });
 
   return NextResponse.json(updated);
 }

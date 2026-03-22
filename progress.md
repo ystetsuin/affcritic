@@ -1,301 +1,271 @@
 ## Progress
 
-### Prisma Schema (todo.md)
-**Статус:** Завершено
+> Останнє оновлення: 2026-03-22 (session 3)
 
-- [x] Створено `prisma/schema.prisma`
-- [x] 11 моделей: Channel, Folder, FolderChannel, TagCategory, Tag, RawPost, Post, PostSource, PostTag, AdminSetting, PipelineLog
-- [x] 2 enum: TagStatus (active/pending), PipelineLogType (scraper/embedding/grouping/gpt/quality/admin)
-- [x] Всі зв'язки (relations) між моделями
-- [x] 13 indexes відповідно до CLAUDE.md (12 звичайних + 1 unique)
-- [x] UNIQUE constraints: channels.username, folders.slug, tags.slug, tag_categories.slug, raw_posts(channel_id + message_id)
-- [x] Composite PK на FolderChannel (folder_id, channel_id)
-- [x] UUID як default для всіх id
-- [x] `npx prisma validate` — PASS
+---
 
-### PostgreSQL + Prisma Client (todo.md)
-**Статус:** Завершено
+## Огляд проекту
 
-- [x] PostgreSQL база на Neon (free tier) підключена
-- [x] `DATABASE_URL` прописано в `.env`
-- [x] `.env` в `.gitignore`
-- [x] `.env.example` існує
-- [x] Встановлено `@prisma/client`, `@prisma/adapter-pg`, `dotenv`
-- [x] `npx prisma db push` — таблиці створені в БД
-- [x] `npx prisma generate` — клієнт згенерований
-- [x] `lib/db.ts` — singleton Prisma client з PrismaPg adapter + globalThis паттерн для Next.js dev
-- [x] Тест-запит `SELECT 1` — Connection OK
+AffCritic — платформа агрегації новин з Telegram-каналів для affiliate/iGaming індустрії. Python scraper → PostgreSQL → Next.js pipeline (embedding, grouping, GPT summary, quality check) → Feed UI + Admin panel.
 
-### Перша міграція (todo.md)
-**Статус:** Завершено
+**Стан: ~95% завершено.** Всі core features реалізовані. URL refactor (topics/channels) виконано. Залишилась `/about/` сторінка.
 
-- [x] `npx prisma migrate dev --name init` — міграція `20260320211737_init` створена і застосована
-- [x] 11 таблиць створені в БД
-- [x] 17 indexes (13 звичайних + 4 unique) створені
-- [x] 10 FK constraints з правильним onDelete (Cascade/SetNull)
-- [x] Файл міграції в `prisma/migrations/20260320211737_init/migration.sql`
-- [x] `npx prisma generate` — клієнт перегенерований
-- [x] Тест-запит `SELECT 1` — Connection OK
+---
 
-### Seed (todo.md)
-**Статус:** Завершено
+## Структура файлів (актуальна)
 
-- [x] `prisma/seed.ts` створений
-- [x] 8 каналів (реальні affiliate/iGaming TG-канали)
-- [x] 3 папки: SEO, Affiliate Programs, Media
-- [x] 10 folder_channels зв'язків (partnerkin і affiliate_valley в 2+ папках)
-- [x] 3 tag_categories: GEO, Компанія, Персона
-- [x] 12 active тегів + 3 pending тега
-- [x] admin_settings: cron_interval = 8
-- [x] Seed ідемпотентний (upsert) — повторний запуск без дублікатів
-- [x] Seed команда в `prisma.config.ts`
-- [x] `npx prisma db seed` — PASS
+### prisma/
+| Файл | Призначення |
+|------|-------------|
+| `schema.prisma` | 13 моделей (incl. BlockedPost), 2 enum, 14+ indexes |
+| `migrations/` | Початкова міграція `20260320211737_init` |
+| `seed.ts` | Seed: 8 каналів, 3 папки, 15 тегів, admin_settings |
+| `prisma.config.ts` | Seed command config |
 
-### PipelineLog (todo.md)
-**Статус:** Завершено
+**Моделі БД (13):** Channel, ChannelCategory (sort_order), ChannelCategoryMap, TagCategory, Tag, TagAlias, BlockedPost, RawPost, Post, PostSource, PostTag, AdminSetting, PipelineLog
 
-- [x] Модель `PipelineLog` вже була в schema.prisma з таски 1.1
-- [x] Enum `PipelineLogType` (6 значень) вже існував
-- [x] 3 indexes (type, post_id, created_at) вже існували
-- [x] FK: postId → posts(id) onDelete: SetNull
-- [x] Seed оновлений — 5 тестових pipeline_logs (scraper, embedding, grouping, gpt, quality) з різною структурою payload
+### scraper/
+| Файл | Призначення |
+|------|-------------|
+| `main.py` | Telethon scraper: читає TG-канали → raw_posts. `--hours N` аргумент. Level 1 dedup, blocked_posts check, pipeline logging, error handling |
+| `auth.py` | Авторизація telethon session |
+| `requirements.txt` | telethon, psycopg2-binary, python-dotenv |
+| `cron_runner.sh` | Bash wrapper для системного cron з self-throttle |
 
-### Telethon Setup (todo.md)
-**Статус:** Завершено
+### lib/
+| Файл | Призначення |
+|------|-------------|
+| `db.ts` | Prisma singleton (PrismaPg adapter + globalThis) |
+| `openai.ts` | OpenAI SDK: embedding (text-embedding-3-small), GPT summary (gpt-4o-mini), quality check |
+| `dedup.ts` | cosineSimilarity(), findSimilarPosts() — threshold 0.83, window 48h |
+| `grouping.ts` | groupNewPosts() — join existing / create new group, protected groups logic |
+| `pipeline.ts` | runPipeline() — orchestration: embedding → grouping → GPT → quality → mark processed |
+| `prompts.ts` | buildPrompt() — system/user prompts для GPT, master-list тегів з aliases |
+| `logger.ts` | logPipeline() — запис в pipeline_logs |
+| `utils.ts` | Tailwind utilities (clsx + tw-merge) |
 
-- [x] `scraper/` директорія створена
-- [x] `scraper/requirements.txt` — telethon, psycopg2-binary, python-dotenv
-- [x] `pip install` — залежності встановлені
-- [x] `scraper/auth.py` — скрипт авторизації створений
-- [x] `TG_API_ID`, `TG_API_HASH`, `TG_SESSION_NAME` додані в `.env`
-- [x] `.env.example` вже містить TG змінні
-- [x] `*.session` додано в `.gitignore`
-- [x] Авторизація пройдена, session file `affcritic.session` створений
+### components/
+| Файл | Призначення |
+|------|-------------|
+| `Feed.tsx` | Server component: fetch posts з Prisma, фільтри (folder/channel/tag), summary IS NOT NULL |
+| `FeedClient.tsx` | Client component: "Показати ще", merge toolbar, split, delete handling |
+| `PostCard.tsx` | Картка поста: summary, tags, sources, score badge, admin controls (edit, tags, delete ×) |
+| `PostInlineEdit.tsx` | Inline textarea для редагування summary (admin) |
+| `PostTagEditor.tsx` | Autocomplete tag editor з inline створенням тегів (admin) |
+| `PostSources.tsx` | Expandable джерела поста (+N), split кнопка (admin) |
+| `TagChip.tsx` | Badge-link тега → /tag/{slug}/ |
+| `Sidebar.tsx` | Client: mode="tags" (пошук тегів, collapsible) або mode="channels" (категорії каналів) |
+| `SidebarServer.tsx` | Server: fetch active tags + channel categories |
+| `FolderNav.tsx` | Client: горизонтальне меню → /topics/{slug}/ |
+| `FolderNavServer.tsx` | Server: fetch categories (sortOrder) для FolderNav |
+| `EntityHeader.tsx` | Header для tag entity feed: ← Feed, tag name, N згадок |
+| `ChannelsPage.tsx` | Client: каталог каналів з stats таблицею + sidebar фільтр |
+| `TopicsPage.tsx` | Client: topics hub — плитки категорій + плитки тегів |
+| `AdminContext.tsx` | React context: admin mode через ?admin=1 |
+| `AdminWrapper.tsx` | Client wrapper для AdminContext (hydration-safe via useEffect) |
+| `DashboardCharts.tsx` | Recharts: GPT cost + posts/summaries/unprocessed |
+| `ui/` | shadcn/ui компоненти (Button, etc.) |
 
-### Level 1 Dedup (todo.md)
-**Статус:** Завершено
+### app/ (pages)
+| Файл | Призначення |
+|------|-------------|
+| `layout.tsx` | Root layout: fonts, FolderNav, AdminWrapper |
+| `page.tsx` | Головна: Feed + Sidebar |
+| `topics/page.tsx` | Topics hub: category tiles + tag tiles |
+| `topics/[slug]/page.tsx` | Category feed (channel_categories lookup) |
+| `channels/page.tsx` | Channels catalog: stats table + sidebar filter |
+| `channels/[username]/page.tsx` | Channel feed (channels lookup) |
+| `tag/[slug]/page.tsx` | Entity feed по тегу: EntityHeader + Feed |
+| `admin/page.tsx` | Dashboard: metrics, charts, quick actions, recent logs |
+| `admin/channels/page.tsx` | CRUD каналів: strip @, multi-select categories, newest first |
+| `admin/topics/page.tsx` | CRUD channel_categories: DnD sort (@dnd-kit), create, edit, delete |
+| `admin/tags/page.tsx` | Pending tags, tag categories (drag-and-drop sort), active tags, aliases, merge |
+| `admin/posts/page.tsx` | Posts management: delete, edit, merge, split, exclude |
+| `admin/logs/page.tsx` | Pipeline logs: фільтри, expandable payload, auto-refresh |
+| `admin/settings/page.tsx` | Cron interval, scraper launch, pipeline launch |
 
-- [x] `INSERT ... ON CONFLICT (channel_id, message_id) DO NOTHING` (був раніше)
-- [x] Pre-fetch SELECT існуючих `message_id` — `get_existing_message_ids()` в `scraper/main.py`
-- [x] Лічильник `read` + `skipped` (різниця між прочитаними і вставленими)
-- [x] Логування статистики: `Channel @xxx: 50 read, 12 new, 38 skipped`
-- [x] UNIQUE constraint `(channel_id, message_id)` працює на рівні БД (Prisma schema + `ON CONFLICT` fallback)
+### app/api/ (28 API routes)
+| Endpoint | Methods | Призначення |
+|----------|---------|-------------|
+| `/api/posts` | GET | Feed з фільтрами та пагінацією |
+| `/api/posts/[id]` | GET, PATCH | Single post, edit summary, soft delete |
+| `/api/posts/[id]/tags` | POST, DELETE | Додати/видалити тег з поста |
+| `/api/posts/[id]/split` | POST | Відокремити source в новий пост |
+| `/api/posts/[id]/exclude` | POST | Видалити source (0 sources → delete post) |
+| `/api/posts/merge` | POST | Об'єднати кілька постів |
+| `/api/channels` | GET, POST | List/create каналів (POST: categoryIds, strip @) |
+| `/api/channels/[id]` | GET, PATCH, DELETE | Single channel CRUD |
+| `/api/channels/stats` | GET | Channel stats: today/week/month/allTime + share |
+| `/api/folders` | GET, POST | List/create channel_categories (sortOrder, auto max+1) |
+| `/api/folders/[id]` | GET, PATCH, DELETE | Single category CRUD |
+| `/api/folders/[id]/channels` | GET, POST, DELETE | M2M: канали в категорії |
+| `/api/folders/reorder` | POST | Batch update channel_categories sortOrder |
+| `/api/tags` | GET, POST | List/create тегів |
+| `/api/tags/[id]` | PATCH, DELETE | Update/delete тег |
+| `/api/tags/[id]/approve` | PATCH | pending → active |
+| `/api/tags/[id]/reject` | PATCH | pending → delete |
+| `/api/tags/[id]/aliases` | POST, DELETE | CRUD aliases |
+| `/api/tags/merge` | POST | Merge дублікатів |
+| `/api/tag-categories` | GET, POST | List/create tag categories |
+| `/api/tag-categories/[id]` | PATCH, DELETE | Update/delete tag category |
+| `/api/tag-categories/reorder` | POST | Batch update sortOrder |
+| `/api/admin/settings` | GET, PATCH | Admin settings CRUD |
+| `/api/admin/stats` | GET | Dashboard metrics |
+| `/api/admin/charts` | GET | Cost + posts charts data |
+| `/api/logs` | GET | Pipeline logs з фільтрами |
+| `/api/pipeline/run` | POST | Manual pipeline trigger |
+| `/api/scraper/run` | POST | Manual scraper trigger |
 
-### Cron Setup (todo.md)
-**Статус:** Завершено
+---
 
-- [x] `get_admin_setting()` / `set_admin_setting()` — читання/запис `admin_settings` в `scraper/main.py`
-- [x] Читання `cron_interval` з БД при старті, логування: `Cron interval: 8 hours`
-- [x] Fallback на default (8 годин) з WARNING якщо ключ відсутній
-- [x] `last_scrape_at` записується в `admin_settings` після кожного успішного запуску (ISO 8601 UTC)
-- [x] `scraper/cron_runner.sh` — wrapper для системного cron (self-throttle на основі `last_scrape_at` + `cron_interval`)
-- [x] Для Railway/Render — запускати `python scraper/main.py` напряму через їх cron service
+## Завершені фічі
 
-### Scraper Pipeline Logging (todo.md)
-**Статус:** Завершено
+### Backend / Pipeline
+- [x] Prisma schema: 12 моделей, міграція, seed (8 каналів, 3 папки, 15 тегів)
+- [x] PostgreSQL на Neon підключена
+- [x] Python scraper (telethon): `--hours N`, Level 1 dedup, pipeline logging, flood control
+- [x] Embedding: text-embedding-3-small, batch по 50, float32 LE серіалізація
+- [x] Dedup: cosine similarity >= 0.83, 48h window
+- [x] Grouping: join existing / create new, protected groups (is_manually_grouped), is_manually_edited reset
+- [x] GPT Summary: gpt-4o-mini, JSON output (summary + tags), pending tag creation, master-list з aliases
+- [x] Quality Check: summary embedding vs avg source embeddings → summary_score
+- [x] Pipeline orchestration: embedding → grouping → GPT → quality → mark processed
+- [x] Pipeline logging: всі 6 типів (scraper, embedding, grouping, gpt, quality, admin)
+- [x] Admin action logging: 17 mutation endpoints логують в pipeline_logs (type: admin)
+- [x] Tag aliases: модель, API, пошук, merge transfer, GPT prompt integration
+- [x] Tag categories reorder: drag-and-drop з @dnd-kit
 
-- [x] `insert_pipeline_log()` — запис structured log в `pipeline_logs` (type=scraper, post_id=NULL)
-- [x] Payload: `channels_total`, `channels_success`, `channels_failed`, `posts_new`, `posts_skipped`, `errors[]`, `duration_seconds`, `cron_interval`
-- [x] `error_details` збирається per-channel з `scrape_channel()` і включається в payload
-- [x] Лог записується навіть якщо 0 каналів (early return)
-- [x] Crash handler: `try/except` на верхньому рівні → fatal error записується в `pipeline_logs`
-- [x] `duration_seconds` через `time.monotonic()`
+### Frontend / UI
+- [x] Feed: server-side fetch + client "Показати ще", фільтри (folder, channel, tag), summary IS NOT NULL
+- [x] PostCard: summary, tags, sources (expandable), score badge, relative time, admin delete (×)
+- [x] Sidebar: mode="tags" (пошук/categories) + mode="channels" (channel categories filter)
+- [x] FolderNav: горизонтальне меню → /topics/{slug}/, sortOrder
+- [x] Entity Feed (/tag/[slug]): EntityHeader + Feed
+- [x] Topics hub (/topics/): category tiles + tag tiles
+- [x] Topics feed (/topics/[slug]/): category feed + sidebar
+- [x] Channels catalog (/channels/): stats table + sidebar filter
+- [x] Channel feed (/channels/[username]/): channel feed + sidebar
+- [x] Admin mode: ?admin=1 query param → AdminContext (hydration-safe)
+- [x] Blocked posts: delete → blocked_posts → scraper skip
 
-### Embedding (todo.md)
-**Статус:** Завершено
+### Admin Panel
+- [x] Dashboard: metrics grid, GPT cost + posts/unprocessed charts (recharts), recent logs, quick actions
+- [x] Channels: CRUD, toggle active/inactive, strip @, multi-select categories on create, newest first
+- [x] Topics (ex-Categories): CRUD channel_categories, auto-translit slug, DnD sort (@dnd-kit)
+- [x] Tags: pending approve/reject, CRUD categories (drag-and-drop sort), CRUD active tags, aliases, merge
+- [x] Posts: delete (+ blocked_posts), edit summary (inline), merge (multi-select), split, exclude source
+- [x] Logs: table з фільтрами (type, post_id, date range), expandable JSON, auto-refresh 30s
+- [x] Settings: cron interval, manual scraper launch (12h/1d/2d), manual pipeline launch
+- [x] Inline Feed Editing: edit summary, add/remove tags (autocomplete), create tag inline, merge/split/delete з feed
 
-- [x] `OPENAI_API_KEY` вже був в `.env.example`
-- [x] `npm install openai` — SDK встановлено
-- [x] `lib/openai.ts` — singleton OpenAI client (lazy init через `getOpenAI()`)
-- [x] `generateEmbedding(text)` — виклик `text-embedding-3-small`, повертає `number[]` (1536 dimensions)
-- [x] `processUnembeddedPosts()` — SELECT `raw_posts WHERE embedding IS NULL AND processed = false` → batch по 50 → генерує embedding → UPDATE
-- [x] `embeddingToBuffer()` / `bufferToEmbedding()` — серіалізація float32 LE ↔ Buffer (round-trip тест OK)
-- [x] Порожні тексти (NULL / empty) пропускаються без API виклику
-- [x] Error handling: помилка OpenAI логується, пост пропускається, pipeline продовжує
+---
 
-### Dedup / Cosine Similarity (todo.md)
-**Статус:** Завершено
+## Відсутні фічі / Невідповідності з CLAUDE.md
 
-- [x] `lib/dedup.ts` створено
-- [x] `cosineSimilarity(a, b)` — чиста функція, 5/5 unit tests (identical=1.0, orthogonal=0.0, opposite=-1.0, zero=0.0, known angle=0.96)
-- [x] `findSimilarPosts(embedding, excludeId?)` — SELECT raw_posts за 48h window з embedding → cosine similarity → фільтр >= 0.83 → sorted DESC
-- [x] `SIMILARITY_THRESHOLD = 0.83` — іменована константа
-- [x] `DEDUP_WINDOW_HOURS = 48` — іменована константа
-- [x] Edge case: порожня БД → порожній масив; self-exclusion через `excludeId`
-- [x] Embeddings завантажуються з БД одним запитом (batch, не per-post)
+### Відсутні сторінки
+- [ ] `/about/` — статична сторінка (згадана в CLAUDE.md URL Structure, не реалізована)
 
-### Grouping (todo.md)
-**Статус:** Завершено
+### ~~`/channels/` сторінка~~ DONE
+~~Список всіх каналів з фільтром по категоріях~~ → Реалізовано: `/channels/` каталог зі stats + sidebar.
 
-- [x] `lib/grouping.ts` створено
-- [x] `groupNewPosts()` — SELECT `raw_posts WHERE processed=false AND embedding IS NOT NULL AND postId IS NULL` → ordered by postedAt ASC
-- [x] similarity > 0.83 → join existing group (raw_post.postId = existing post.id) + create post_source
-- [x] similarity < 0.83 → create new post + post_source + set raw_post.postId (в транзакції)
-- [x] `is_manually_grouped = true` → skip з логом, fallback на наступний кандидат або нова група
-- [x] `tg_url` формат: `https://t.me/{username}/{message_id}`
-- [x] `post_sources.original_text` = raw_post.text
-- [x] Повертає `Set<string>` changed group IDs для подальшого GPT summary
-- [x] Edge case: raw_post без embedding — warning + skip
-- [x] Транзакційність: post + post_source + raw_post update — в `$transaction`
+### Термінологія: "Folder" vs "Category" (API naming)
+В БД: `ChannelCategory`. В API: `/api/folders/`. В URL: `/topics/{slug}` (публічна), `/channels/` (каталог). API naming "folders" зберігається для зворотної сумісності.
 
-### Protected Groups (todo.md)
-**Статус:** Завершено
+---
 
-- [x] Ітерація по всіх similar results (sorted by similarity DESC), не тільки першому
-- [x] `is_manually_grouped = true` → skip з логом `Post {id} skipped protected group {group_id}, similarity={score}`
-- [x] Fallback: наступний кандидат > 0.83 і не protected → join туди
-- [x] Якщо всі кандидати protected або similarity < 0.83 → створюється нова група (default `is_manually_grouped = false`)
+## Відомі баги / Issues
 
-### Pipeline Logging — Embedding & Grouping (todo.md)
-**Статус:** Завершено
+### PostCard.tsx: мова relative time
+Рядки 49-52 використовують англійські строки ("just now", "m ago", "h ago"), але дати форматуються як "ru-RU". Має бути або все українське/російське, або все англійське.
 
-- [x] `lib/logger.ts` — `logPipeline(type, postId, payload)` обгортка для INSERT в pipeline_logs
-- [x] **Embedding лог** (type: `embedding`): 1 запис на batch з `posts_processed`, `posts_skipped_empty_text`, `errors[]`, `tokens_used`, `duration_seconds`
-- [x] `tokens_used` з `response.usage.total_tokens` (OpenAI API)
-- [x] **Grouping лог** (type: `grouping`): 1 запис НА КОЖЕН raw_post з `post_id` (FK на posts)
-- [x] Payload: `raw_post_id`, `decision` (`joined_existing` / `new_group`), `target_group_id`, `top_similarities` (top-3), `skipped_protected_groups[]`, `threshold`
-- [x] Інтегровано в `lib/openai.ts` (processUnembeddedPosts) і `lib/grouping.ts` (groupNewPosts)
+### PostTagEditor.tsx: відсутній aliases в новому тегу
+При створенні нового тега inline, об'єкт не включає `aliases: []` — може показувати undefined при наступному пошуку.
 
-### GPT Prompt (todo.md)
-**Статус:** Завершено
+### FeedClient.tsx: дороге перезавантаження
+При merge/split feed перезавантажується з `limit * page` (наприклад, 100+ постів на 5-й сторінці). Можна оптимізувати.
 
-- [x] `lib/prompts.ts` створено
-- [x] System prompt: мова=рос., тон=нейтральний news-style, 3-5 речень, JSON schema
-- [x] `buildPrompt(sourceTexts, activeTags)` → `{system, user}`
-- [x] User prompt: джерела пронумеровані + master-list тегів по категоріях
-- [x] Інструкції: is_new=false для match, is_new=true для нових, category з існуючих, `[]` якщо тегів немає
-- [x] Порожній master-list → fallback текст з інструкцією пропонувати нові теги
+### pipeline.ts: приблизний підрахунок pending тегів
+Рядок ~99: рахує ВСІ pending теги створені після startTime, а не тільки ті, що створені в цьому batch. Не критично, але метрика може бути завищена.
 
-### Master-list тегів для GPT (todo.md)
-**Статус:** Завершено
+### Sidebar відсутній на підсторінках
+`[folder]/page.tsx` і `[folder]/[channel]/page.tsx` не включають Sidebar (тільки placeholder або відсутній).
 
-- [x] `getActiveTagsList()` — SELECT tags WHERE status=active JOIN tag_categories, grouped by category, sorted by sortOrder
-- [x] `TagListEntry` інтерфейс: `{category, categorySlug, tags: {name, slug}[]}`
-- [x] `toPromptTags(entries)` — конвертер TagListEntry[] → TagListItem[] для buildPrompt
-- [x] Кешування: виклик 1 раз на batch, результат передається в buildPrompt per-group
-- [x] Порожній master-list (0 active тегів) → prompt з fallback інструкцією
+### ~~Grouping пропускає згруповані raw_posts за межами 48h вікна~~ FIXED
+~~`findSimilarPosts()` шукав кандидатів тільки серед raw_posts за 48 годин. Згруповані raw_posts (ongoing stories) з `postedAt` поза вікном не знаходились, навіть якщо similarity > 0.83.~~ Виправлено: два пули кандидатів — згруповані (без ліміту часу) + незгруповані (48h вікно).
 
-### GPT Summary + Tags (todo.md)
-**Статус:** Завершено
+### ~~Pipeline infinite loop на media-only постах~~ FIXED
+~~`processUnembeddedPosts()` зациклювався на raw_posts без тексту (media-only).~~ Виправлено: text-less пости маркуються `processed=true` одразу.
 
-- [x] `generateSummaryForGroup(groupId, tagList)` в `lib/openai.ts`
-- [x] Збирає всі post_sources → об'єднує original_text → buildPrompt → GPT-4o-mini з `response_format: json_object`
-- [x] Парсинг + валідація JSON response (summary string, tags array)
-- [x] `is_new: false` → findFirst tag by name (case-insensitive, active) → create post_tag
-- [x] `is_new: true` → create tag status=pending з auto-slugify + create post_tag (дублікати не створюються — перевірка existing)
-- [x] `is_manually_edited = true` → SKIP summary generation
-- [x] Невалідний GPT response → log error, return null, pipeline продовжує
-- [x] Перед tag processing — deleteMany existing post_tags (regeneration)
-- [x] Pipeline log (type: gpt) з summary_length, tags_count, tags_new, tags_existing
+### ~~Порожні картки у Feed (posts без summary)~~ FIXED
+~~Пости створювались у grouping, але GPT падав — summary залишався null.~~ Виправлено: фільтр `summary IS NOT NULL` у Feed + pipeline не маркує failed GPT групи як processed.
 
-### Summary Quality Check (todo.md)
-**Статус:** Завершено
+### ~~Charts: summaries > processed~~ FIXED
+~~summaries_created рахувались по кількості GPT-логів (merge/split regen завищував).~~ Виправлено: рахуємо з таблиці posts.
 
-- [x] `checkSummaryQuality(groupId)` в `lib/openai.ts`
-- [x] Генерує embedding для summary (text-embedding-3-small)
-- [x] Обчислює avg embedding джерел (поелементне середнє raw_posts.embedding)
-- [x] cosine_similarity(summary_embedding, avg_source_embedding) → posts.summary_score
-- [x] Threshold статуси: >= 0.75 ok, 0.60-0.74 suspicious, < 0.60 bad
-- [x] Skip якщо summary=NULL або 0 source embeddings (з warning)
-- [x] Pipeline log (type: quality) з score, status, source_count
+---
 
-### is_manually_edited Protection (todo.md)
-**Статус:** Завершено
+## Виконані таски (хронологія)
 
-- [x] `generateSummaryForGroup`: check `is_manually_edited = true` → SKIP з логом (було раніше)
-- [x] `grouping.ts`: при join existing group → reset `is_manually_edited = false` в тій самій транзакції
-- [x] Логування: `Group {id}: is_manually_edited reset (new source added)`
-- [x] `is_manually_grouped` і `is_manually_edited` працюють незалежно
-
-### Pipeline Orchestration (todo.md)
-**Статус:** Завершено
-
-- [x] `lib/pipeline.ts` — `runPipeline()` orchestrates повний цикл
-- [x] Послідовність: embedding → grouping → getActiveTagsList → GPT summary → quality check → mark processed
-- [x] `PipelineResult`: embeddingsGenerated, groupsCreated, groupsUpdated, summariesGenerated, pendingTagsCreated, errors[], durationSeconds
-- [x] Error handling: помилка в одному кроці/групі не зупиняє pipeline (try/catch per-step + per-group)
-- [x] Mark processed: `UPDATE raw_posts SET processed=true WHERE embedding IS NOT NULL AND postId IS NOT NULL`
-- [x] API endpoint: `POST /api/pipeline/run` → повертає PipelineResult як JSON
-- [x] `getActiveTagsList()` викликається 1 раз на batch
-
-### Pipeline Logging — GPT & Quality (todo.md)
-**Статус:** Завершено
-
-- [x] **GPT лог** (type: gpt, per-group): group_id, sources_count, input_tokens, output_tokens, cost_usd, matched_tags[], new_pending_tags[], summary_length_chars, duration_ms
-- [x] GPT error лог: group_id, error message, tokens, duration_ms
-- [x] Cost calculation: GPT-4o-mini pricing ($0.15/1M input, $0.60/1M output)
-- [x] **Quality лог** (type: quality, per-group): group_id, summary_score, status (ok/suspicious/bad), threshold (0.75), source_count
-- [x] Всі логи мають post_id (FK на posts)
-
-### Posts API (todo.md)
-**Статус:** Завершено
-
-- [x] `app/api/posts/route.ts` — GET endpoint
-- [x] Query params: `folder` (slug), `channel` (username), `tag` (slug), `page` (default 1), `limit` (default 20, max 100)
-- [x] Base: `WHERE isDeleted=false ORDER BY createdAt DESC` з пагінацією
-- [x] Фільтр folder: через `postSources → channel → categoryMap → category.slug`
-- [x] Фільтр channel: через `postSources → channel.username`
-- [x] Фільтр tag: через `postTags → tag.slug WHERE status=active`
-- [x] Фільтри комбінуються через AND
-- [x] Include: postSources (channel username/displayName, tgUrl), postTags (tag name/slug/category — тільки active)
-- [x] Response: `{posts, pagination: {page, limit, total, totalPages}}`
-- [x] Next.js ще не встановлений — компіляція після `npm install next`
-
-### Channels CRUD API (todo.md)
-**Статус:** Завершено
-
-- [x] `app/api/channels/route.ts` — GET (list з categories), POST (create з валідацією)
-- [x] `app/api/channels/[id]/route.ts` — GET (single), PATCH (displayName, isActive), DELETE
-- [x] Username валідація: lowercase, 4-32 chars, regex `/^[a-z][a-z0-9_]{3,31}$/`, strip `@`
-- [x] Дублікат username → 409 Conflict
-- [x] GET response: channel + `categories[]` (через categoryMap)
-- [x] DELETE cascade: `ChannelCategoryMap` onDelete: Cascade в Prisma schema
-
-### Folders (Categories) CRUD API (todo.md)
-**Статус:** Завершено
-
-- [x] `app/api/folders/route.ts` — GET (list з channelsCount), POST (create з slug валідацією)
-- [x] `app/api/folders/[id]/route.ts` — GET (single з channels), PATCH (name, slug), DELETE
-- [x] `app/api/folders/[id]/channels/route.ts` — GET (channels in folder), POST (add channel), DELETE (remove channel)
-- [x] Slug валідація: lowercase+hyphens, regex, reserved slugs (about, admin, tag, api) → 400
-- [x] Дублікат slug → 409 Conflict (включно з PATCH)
-- [x] M2M: channelCategoryMap з composite PK, дублікат зв'язку → 409
-- [x] DELETE cascade через Prisma schema
-
-### Tags CRUD API (todo.md)
-**Статус:** Завершено
-
-- [x] `app/api/tag-categories/route.ts` — GET (list з tagsCount, sorted by sortOrder), POST
-- [x] `app/api/tag-categories/[id]/route.ts` — PATCH (name, slug, sortOrder), DELETE (cascade tags)
-- [x] `app/api/tags/route.ts` — GET (filters: status, category; includes postsCount, category), POST (create з categoryId валідацією)
-- [x] `app/api/tags/[id]/route.ts` — PATCH (name, slug, categoryId, status), DELETE (cascade postTags)
-- [x] `app/api/tags/[id]/approve/route.ts` — POST (pending → active, 400 якщо вже active)
-- [x] `app/api/tags/[id]/reject/route.ts` — POST (pending → delete + cascade postTags, 400 якщо не pending)
-- [x] `app/api/tags/merge/route.ts` — POST ({sourceId, targetId}): transfer postTags → delete source (в транзакції, без дублікатів)
-- [x] Slug валідація + UNIQUE check на всіх endpoints
-
-### Posts Admin API (todo.md)
-**Статус:** Завершено
-
-- [x] `app/api/posts/[id]/route.ts` — GET (single з sources+tags), PATCH (edit summary → isManuallyEdited=true, soft delete)
-- [x] `app/api/posts/merge/route.ts` — POST ({postIds}): move sources+rawPosts+tags → target, soft-delete rest, isManuallyGrouped=true, GPT regen
-- [x] `app/api/posts/[id]/split/route.ts` — POST ({sourceId}): new post, move source+rawPost, isManuallyGrouped=true обох, GPT regen обох
-- [x] `app/api/posts/[id]/exclude/route.ts` — POST ({sourceId}): delete source, unlink rawPost; 0 sources → isDeleted=true; >0 → GPT regen
-- [x] Валідація: deleted posts → 400; split з 1 source → 400
-- [x] Всі мутації в `$transaction`; GPT regen після транзакції
-
-### Admin Settings API (todo.md)
-**Статус:** Завершено
-
-- [x] `app/api/admin/settings/route.ts` — GET (all settings as object), PATCH ({key, value})
-- [x] Whitelist: `cron_interval`, `last_scrape_at`
-- [x] Валідація `cron_interval`: число 1-24
-- [x] Невалідний key → 400; upsert для створення/оновлення
-
-### Pipeline Logs API (todo.md)
-**Статус:** Завершено
-
-- [x] `app/api/logs/route.ts` — GET з фільтрами та пагінацією
-- [x] Query params: `type`, `post_id`, `from`, `to`, `page` (default 1), `limit` (default 50, max 100)
-- [x] Sorted by `createdAt DESC`; payload як JSON object (Prisma Json type)
-- [x] Response: `{logs, pagination: {page, limit, total, totalPages}}`
+1. Prisma Schema (12 моделей, 2 enums, indexes)
+2. PostgreSQL + Prisma Client (Neon, singleton)
+3. Перша міграція (20260320211737_init)
+4. Seed (8 каналів, 3 папки, 15 тегів, admin_settings, test logs)
+5. PipelineLog модель + seed
+6. Telethon Setup (авторизація, session)
+7. Level 1 Dedup (ON CONFLICT, pre-fetch existing)
+8. Cron Setup (admin_settings interval, last_scrape_at, cron_runner.sh)
+9. Scraper Pipeline Logging
+10. Embedding (text-embedding-3-small, batch, float32 serialization)
+11. Dedup / Cosine Similarity (threshold 0.83, window 48h)
+12. Grouping (join/create groups, protected groups, transactions)
+13. Pipeline Logging — Embedding & Grouping
+14. GPT Prompt (lib/prompts.ts, master-list тегів)
+15. GPT Summary + Tags (gpt-4o-mini, JSON output, pending tags)
+16. Summary Quality Check (summary vs sources embedding)
+17. is_manually_edited Protection
+18. Pipeline Orchestration (lib/pipeline.ts, runPipeline())
+19. Pipeline Logging — GPT & Quality
+20. Posts API (GET з фільтрами, пагінація)
+21. Channels CRUD API
+22. Folders (Categories) CRUD API
+23. Tags CRUD API (approve, reject, merge)
+24. Posts Admin API (edit, merge, split, exclude)
+25. Admin Settings API
+26. Pipeline Logs API
+27. Next.js Init (16.2.1, Tailwind 4, shadcn/ui)
+28. PostCard + TagChip + PostSources
+29. Feed Page (server + client components)
+30. Folder Page + Channel in Folder Page
+31. Entity Feed / Tag Page
+32. Sidebar (search, collapsible categories, mobile drawer)
+33. FolderNav (horizontal menu, active state)
+34. Admin: Channels (table, toggle, category badges)
+35. Admin: Folders/Categories
+36. Admin: Tags (pending, categories DnD sort, active tags, merge)
+37. Admin: Posts (delete, edit, merge, split, exclude)
+38. Admin: Settings (cron, manual pipeline/scraper)
+39. Admin: Logs (filters, expandable JSON, auto-refresh)
+40. Admin Action Logging (17 endpoints)
+41. Admin Tags: Edit Categories & Tags (inline edit)
+42. Tag Aliases (model, API, GPT prompt, admin UI)
+43. Admin Dashboard (stats, charts, recent logs, quick actions)
+44. Inline Feed Editing (?admin=1, PostInlineEdit, PostTagEditor)
+45. Tag Categories Drag-and-Drop Sort (@dnd-kit)
+46. Feed Merge & Split (admin toolbar)
+47. Scraper Web Launch (--hours, API, admin UI)
+48. Admin Dashboard: Recent Logs
+49. Admin Dashboard Charts (recharts, GPT cost)
+50. Admin: Channel Categories Binding + CRUD
+51. Bugfix: pipeline infinite loop on media-only raw_posts (processUnembeddedPosts)
+52. Bugfix: empty post cards in Feed — filter summary IS NOT NULL, pipeline GPT fail tracking
+53. Bugfix: charts overcounting summaries — count from posts table instead of gpt logs
+54. UX: Admin Channels — strip @ from username, newest-first sort, categories multi-select on create
+55. Dashboard Charts: unprocessed raw_posts third line
+56. Blocked Posts: model, delete → block sources, scraper check, PostCard delete button (×)
+57. Hydration fix: AdminWrapper useEffect for ?admin=1
+58. Routing refactor: /topics/{slug} (categories), /channels/{username} (channels), unified routes
+59. Channels catalog (/channels/): stats API, ChannelsPage, sidebar mode="channels"
+60. Topics hub (/topics/): category tiles + tag tiles, TopicsPage
+61. Channel categories: sort_order field, DnD in admin/topics, reorder API, sortOrder in all public queries
+62. Docs sync: CLAUDE.md + progress.md updated to match actual code state
+63. Bugfix: grouping missed grouped raw_posts outside 48h window — two candidate pools (grouped: no time limit, ungrouped: 48h)

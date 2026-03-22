@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   });
 
   // Real counts from tables
-  const [posts, rawPosts] = await Promise.all([
+  const [posts, rawPosts, rawUnprocessed] = await Promise.all([
     prisma.post.findMany({
       where: { summary: { not: null }, isDeleted: false, createdAt: { gte: since } },
       select: { createdAt: true },
@@ -30,14 +30,21 @@ export async function GET(request: NextRequest) {
       where: { processed: true, postedAt: { gte: since } },
       select: { postedAt: true },
     }),
+    prisma.rawPost.findMany({
+      where: { processed: false, postedAt: { gte: since } },
+      select: { postedAt: true },
+    }),
   ]);
 
   // Aggregate by day
-  const dayMap = new Map<string, { cost_usd: number; summaries_created: number; posts_processed: number }>();
+  const dayMap = new Map<string, { cost_usd: number; summaries_created: number; posts_processed: number; raw_unprocessed: number }>();
+
+  const getEntry = (day: string) =>
+    dayMap.get(day) ?? { cost_usd: 0, summaries_created: 0, posts_processed: 0, raw_unprocessed: 0 };
 
   for (const log of gptLogs) {
     const day = log.createdAt.toISOString().slice(0, 10);
-    const entry = dayMap.get(day) ?? { cost_usd: 0, summaries_created: 0, posts_processed: 0 };
+    const entry = getEntry(day);
     const payload = log.payload as Record<string, unknown>;
     entry.cost_usd += Number(payload.cost_usd ?? 0);
     dayMap.set(day, entry);
@@ -45,7 +52,7 @@ export async function GET(request: NextRequest) {
 
   for (const post of posts) {
     const day = post.createdAt.toISOString().slice(0, 10);
-    const entry = dayMap.get(day) ?? { cost_usd: 0, summaries_created: 0, posts_processed: 0 };
+    const entry = getEntry(day);
     entry.summaries_created += 1;
     dayMap.set(day, entry);
   }
@@ -53,8 +60,16 @@ export async function GET(request: NextRequest) {
   for (const rp of rawPosts) {
     if (!rp.postedAt) continue;
     const day = rp.postedAt.toISOString().slice(0, 10);
-    const entry = dayMap.get(day) ?? { cost_usd: 0, summaries_created: 0, posts_processed: 0 };
+    const entry = getEntry(day);
     entry.posts_processed += 1;
+    dayMap.set(day, entry);
+  }
+
+  for (const rp of rawUnprocessed) {
+    if (!rp.postedAt) continue;
+    const day = rp.postedAt.toISOString().slice(0, 10);
+    const entry = getEntry(day);
+    entry.raw_unprocessed += 1;
     dayMap.set(day, entry);
   }
 
@@ -66,12 +81,14 @@ export async function GET(request: NextRequest) {
       cost_usd: parseFloat(vals.cost_usd.toFixed(6)),
       posts_processed: vals.posts_processed,
       summaries_created: vals.summaries_created,
+      raw_unprocessed: vals.raw_unprocessed,
     }));
 
   const totals = {
     cost_usd: parseFloat(data.reduce((s, d) => s + d.cost_usd, 0).toFixed(6)),
     posts_processed: data.reduce((s, d) => s + d.posts_processed, 0),
     summaries_created: data.reduce((s, d) => s + d.summaries_created, 0),
+    raw_unprocessed: data.reduce((s, d) => s + d.raw_unprocessed, 0),
   };
 
   return NextResponse.json({ data, totals, period });

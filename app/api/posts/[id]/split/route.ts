@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/db";
+import { logPipeline } from "../../../../../lib/logger";
 import { generateSummaryForGroup } from "../../../../../lib/openai";
 import { getActiveTagsList } from "../../../../../lib/prompts";
 
@@ -76,6 +77,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     generateSummaryForGroup(id, tagList),
     generateSummaryForGroup(newPostId!, tagList),
   ]);
+
+  await logPipeline("admin", id, { action: "split_post", details: { originalPostId: id, newPostId: newPostId!, sourceId } });
 
   return NextResponse.json({
     originalPostId: id,

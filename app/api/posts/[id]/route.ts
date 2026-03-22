@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
+import { logPipeline } from "../../../../lib/logger";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -62,5 +63,37 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 
   const post = await prisma.post.update({ where: { id }, data });
+
+  // When deleting — block all sources so scraper won't re-add them
+  if (body.isDeleted === true) {
+    const sources = await prisma.postSource.findMany({
+      where: { postId: id },
+      select: { channelId: true, messageId: true },
+    });
+
+    for (const src of sources) {
+      await prisma.blockedPost.upsert({
+        where: {
+          channelId_messageId: { channelId: src.channelId, messageId: src.messageId },
+        },
+        create: {
+          channelId: src.channelId,
+          messageId: src.messageId,
+          reason: "Deleted from feed",
+        },
+        update: {},
+      });
+    }
+
+    await logPipeline("admin", id, {
+      action: "delete_post",
+      details: { id, blocked_sources: sources.length },
+    });
+  }
+
+  if (body.summary !== undefined) {
+    await logPipeline("admin", id, { action: "edit_summary", details: { id } });
+  }
+
   return NextResponse.json(post);
 }

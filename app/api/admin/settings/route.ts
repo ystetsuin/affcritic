@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
+import { logPipeline } from "../../../../lib/logger";
 
 const ALLOWED_KEYS = new Set(["cron_interval", "last_scrape_at"]);
 
@@ -55,6 +56,8 @@ export async function PATCH(request: NextRequest) {
     create: { key, value },
     update: { value },
   });
+
+  await logPipeline("admin", null, { action: "update_setting", details: { key, value } });
 
   return NextResponse.json({ [key]: value });
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
+import { logPipeline } from "../../../../lib/logger";
 
 const RESERVED_SLUGS = new Set(["about", "admin", "tag", "api"]);
 const SLUG_RE = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
@@ -77,6 +78,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   const category = await prisma.channelCategory.update({ where: { id }, data });
 
+  await logPipeline("admin", null, { action: "update_folder", details: { id, changes: data } });
+
   return NextResponse.json(category);
 }
 
@@ -90,6 +93,8 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
 
   // Cascade: ChannelCategoryMap onDelete: Cascade in Prisma schema
   await prisma.channelCategory.delete({ where: { id } });
+
+  await logPipeline("admin", null, { action: "delete_folder", details: { id, slug: existing.slug } });
 
   return NextResponse.json({ ok: true });
 }

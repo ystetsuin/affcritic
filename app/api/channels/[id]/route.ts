@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
+import { logPipeline } from "../../../../lib/logger";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -58,6 +59,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   const channel = await prisma.channel.update({ where: { id }, data });
 
+  await logPipeline("admin", null, { action: "update_channel", details: { id, changes: data } });
+
   return NextResponse.json(channel);
 }
 
@@ -71,6 +74,8 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
 
   // Cascade delete is handled by Prisma schema (onDelete: Cascade on ChannelCategoryMap)
   await prisma.channel.delete({ where: { id } });
+
+  await logPipeline("admin", null, { action: "delete_channel", details: { id, username: existing.username } });
 
   return NextResponse.json({ ok: true });
 }

@@ -13,7 +13,28 @@
       "Bash(python3:*)",
       "Bash(expect:*)",
       "Bash(chmod:*)",
-      "Bash(npx shadcn@latest init -d)"
+      "Bash(npx shadcn@latest init -d)",
+      "Bash(timeout 15 npm run dev)",
+      "Bash(lsof -ti:3001)",
+      "Bash(xargs kill:*)",
+      "Bash(npx tsc:*)",
+      "Bash(wc -l /Users/yar/Documents/work/affcritic/app/api/**/*.ts)",
+      "Bash(grep -r \"TODO\\\\|FIXME\\\\|HACK\" /Users/yar/Documents/work/affcritic --include=*.ts --include=*.tsx --include=*.py)",
+      "Bash(grep -E \"ERROR|error\\\\\\(|throw \" /Users/yar/Documents/work/affcritic/app/api/**/*.ts)",
+      "Bash(npx dotenv:*)",
+      "Bash(kill 37358 37338 37336)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(rm -rf /Users/yar/Documents/work/affcritic/app/channels/[slug])",
+      "Bash(mkdir -p /Users/yar/Documents/work/affcritic/app/channels/[username])",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(curl -s 'http://localhost:3000/' -H 'RSC: 1')",
+      "Bash(curl -s 'http://localhost:3000/' -H 'RSC: 1' -H 'Next-Router-State-Tree: %5B%22%22%5D')",
+      "Bash(curl -s http://localhost:3000/ 2)",
+      "Bash(find /Users/yar/Documents/work/affcritic -name *seed* -o -name *config* -o -name *README*)",
+      "Bash(source .env)",
+      "Bash(npx tsx -e \":*)",
+      "Bash(curl:*)"
     ]
   }
 }

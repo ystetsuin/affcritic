@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/db";
+import { logPipeline } from "../../../../../lib/logger";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -66,6 +67,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     data: { categoryId: id, channelId },
   });
 
+  await logPipeline("admin", null, { action: "add_channel_to_folder", details: { folderId: id, channelId } });
+
   return NextResponse.json({ ok: true }, { status: 201 });
 }
 
@@ -89,6 +92,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   await prisma.channelCategoryMap.delete({
     where: { categoryId_channelId: { categoryId: id, channelId } },
   });
+
+  await logPipeline("admin", null, { action: "remove_channel_from_folder", details: { folderId: id, channelId } });
 
   return NextResponse.json({ ok: true });
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
+import { logPipeline } from "../../../../lib/logger";
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
 
@@ -47,6 +48,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 
   const tag = await prisma.tag.update({ where: { id }, data });
+
+  await logPipeline("admin", null, { action: "update_tag", details: { id, changes: data } });
+
   return NextResponse.json(tag);
 }
 
@@ -58,5 +62,8 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
 
   // Cascade: PostTag onDelete: Cascade in Prisma schema
   await prisma.tag.delete({ where: { id } });
+
+  await logPipeline("admin", null, { action: "delete_tag", details: { id, name: existing.name } });
+
   return NextResponse.json({ ok: true });
 }

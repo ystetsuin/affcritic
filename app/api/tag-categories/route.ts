@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/db";
+import { logPipeline } from "../../../lib/logger";
 
 export async function GET() {
   const categories = await prisma.tagCategory.findMany({
@@ -45,6 +46,8 @@ export async function POST(request: NextRequest) {
   const category = await prisma.tagCategory.create({
     data: { name, slug, sortOrder: body.sortOrder ?? 0 },
   });
+
+  await logPipeline("admin", null, { action: "create_tag_category", details: { name, slug } });
 
   return NextResponse.json(category, { status: 201 });
 }

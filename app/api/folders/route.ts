@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/db";
+import { logPipeline } from "../../../lib/logger";
 
 const RESERVED_SLUGS = new Set(["about", "admin", "tag", "api"]);
 const SLUG_RE = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/;
 
 export async function GET() {
   const categories = await prisma.channelCategory.findMany({
-    orderBy: { name: "asc" },
+    orderBy: { sortOrder: "asc" },
     include: {
       _count: { select: { categoryMap: true } },
     },
@@ -16,6 +17,7 @@ export async function GET() {
     id: cat.id,
     name: cat.name,
     slug: cat.slug,
+    sortOrder: cat.sortOrder,
     createdAt: cat.createdAt,
     channelsCount: cat._count.categoryMap,
   }));
@@ -55,9 +57,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
   }
 
+  // Auto-assign sort_order = max + 1
+  const maxOrder = await prisma.channelCategory.aggregate({ _max: { sortOrder: true } });
+  const nextOrder = (maxOrder._max.sortOrder ?? -1) + 1;
+
   const category = await prisma.channelCategory.create({
-    data: { name, slug },
+    data: { name, slug, sortOrder: nextOrder },
   });
+
+  await logPipeline("admin", null, { action: "create_folder", details: { name, slug } });
 
   return NextResponse.json(category, { status: 201 });
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
+import { logPipeline } from "../../../../lib/logger";
 
 export async function POST(request: NextRequest) {
   let body: { sourceId?: string; targetId?: string };
@@ -49,9 +50,25 @@ export async function POST(request: NextRequest) {
       await tx.postTag.createMany({ data: newPostTags });
     }
 
-    // Delete source tag (cascades post_tags)
+    // Add source name as alias of target (if not already)
+    const existingAlias = await tx.tagAlias.findFirst({
+      where: { tagId: targetId, alias: { equals: source.name, mode: "insensitive" } },
+    });
+    if (!existingAlias) {
+      await tx.tagAlias.create({ data: { tagId: targetId, alias: source.name } });
+    }
+
+    // Also transfer source aliases to target
+    await tx.tagAlias.updateMany({
+      where: { tagId: sourceId },
+      data: { tagId: targetId },
+    });
+
+    // Delete source tag (cascades post_tags — aliases already transferred)
     await tx.tag.delete({ where: { id: sourceId } });
   });
+
+  await logPipeline("admin", null, { action: "merge_tags", details: { sourceId, targetId, sourceName: source.name, targetName: target.name } });
 
   return NextResponse.json({ ok: true, merged: source.name, into: target.name });
 }

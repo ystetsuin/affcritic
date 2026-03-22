@@ -32,9 +32,10 @@ model Channel {
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  categoryMap ChannelCategoryMap[]
-  rawPosts    RawPost[]
-  postSources PostSource[]
+  categoryMap  ChannelCategoryMap[]
+  rawPosts     RawPost[]
+  postSources  PostSource[]
+  blockedPosts BlockedPost[]
 
   @@map("channels")
 }
@@ -43,6 +44,7 @@ model ChannelCategory {
   id        String   @id @default(uuid()) @db.Uuid
   name      String
   slug      String   @unique
+  sortOrder Int      @default(0) @map("sort_order")
   createdAt DateTime @default(now()) @map("created_at")
 
   categoryMap ChannelCategoryMap[]
@@ -82,10 +84,23 @@ model Tag {
 
   category TagCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   postTags PostTag[]
+  aliases  TagAlias[]
 
   @@index([status], map: "idx_tags_status")
   @@index([categoryId], map: "idx_tags_category")
   @@map("tags")
+}
+
+model TagAlias {
+  id        String   @id @default(uuid()) @db.Uuid
+  tagId     String   @map("tag_id") @db.Uuid
+  alias     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tag Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@index([tagId], map: "idx_tag_aliases_tag")
+  @@map("tag_aliases")
 }
 
 model RawPost {
@@ -153,6 +168,19 @@ model PostTag {
   @@index([postId], map: "idx_post_tags_post")
   @@index([tagId], map: "idx_post_tags_tag")
   @@map("post_tags")
+}
+
+model BlockedPost {
+  id        String   @id @default(uuid()) @db.Uuid
+  channelId String   @map("channel_id") @db.Uuid
+  messageId Int      @map("message_id")
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, messageId], map: "idx_blocked_channel_msg")
+  @@map("blocked_posts")
 }
 
 model AdminSetting {

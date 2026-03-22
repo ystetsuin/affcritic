@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/db";
+import { logPipeline } from "../../../../../lib/logger";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -17,6 +18,8 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
 
   // Delete post_tags first (cascade), then delete tag
   await prisma.tag.delete({ where: { id } });
+
+  await logPipeline("admin", null, { action: "reject_tag", details: { id, name: tag.name } });
 
   return NextResponse.json({ ok: true });
 }

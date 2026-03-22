@@ -31,7 +31,10 @@ export interface SimilarPost {
 }
 
 /**
- * Find raw_posts within the dedup window whose embedding is similar to the given one.
+ * Find raw_posts whose embedding is similar to the given one.
+ * Two pools of candidates:
+ *   1. Grouped raw_posts (postId != null) — no time limit, ongoing stories
+ *   2. Ungrouped raw_posts (postId == null) — within DEDUP_WINDOW_HOURS
  * Returns results sorted by similarity DESC.
  * Excludes the post with `excludeId` (to avoid self-comparison).
  */
@@ -43,8 +46,11 @@ export async function findSimilarPosts(
 
   const candidates = await prisma.rawPost.findMany({
     where: {
-      postedAt: { gte: cutoff },
       embedding: { not: null },
+      OR: [
+        { postId: { not: null } },
+        { postedAt: { gte: cutoff } },
+      ],
     },
     select: { id: true, postId: true, embedding: true },
   });

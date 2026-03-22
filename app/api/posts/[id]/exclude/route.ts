@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/db";
+import { logPipeline } from "../../../../../lib/logger";
 import { generateSummaryForGroup } from "../../../../../lib/openai";
 import { getActiveTagsList } from "../../../../../lib/prompts";
 
@@ -62,6 +63,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const tagList = await getActiveTagsList();
     await generateSummaryForGroup(id, tagList);
   }
+
+  await logPipeline("admin", id, { action: "exclude_source", details: { postId: id, sourceId, deleted: sourceCount <= 1 } });
 
   return NextResponse.json({
     postId: id,
