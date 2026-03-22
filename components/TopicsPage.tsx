@@ -67,7 +67,7 @@ export function TopicsPage({ categories, tagGroups }: TopicsPageProps) {
             {group.tags.map((tag) => (
               <Link
                 key={tag.slug}
-                href={`/tag/${tag.slug}/`}
+                href={`/tags/${tag.slug}/`}
                 className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm transition-colors hover:border-foreground/20 hover:bg-muted/50"
               >
                 <span className="truncate text-foreground">{tag.name}</span>

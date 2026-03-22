@@ -284,7 +284,8 @@ GPT output JSON:
 | `/topics/{slug}/` | Feed постів з каналів категорії |
 | `/channels/` | Каталог каналів зі статистикою |
 | `/channels/{username}/` | Feed постів одного каналу |
-| `/tag/{tag-slug}/` | Entity Feed по тегу |
+| `/tags/` | Каталог тегів по категоріях |
+| `/tags/{tag-slug}/` | Entity Feed по тегу |
 | `/about/` | Статична |
 | `/admin/` | Адмін-панель |
 
@@ -296,14 +297,14 @@ Routing: `/topics/{slug}` — lookup тільки в `channel_categories`. `/cha
 
 Mobile-first.
 
-**Меню:** посилання на `/channels/`. Головна `/` = всі пости.
+**Меню:** фіксовані посилання: Головна `/`, Тематики `/topics`, Канали `/channels`, Теги `/tags`.
 
-**Сайдбар:** пошук по тегах + collapsible категорії тегів + к-ть постів. Тільки active теги. Клік → `/tag/{slug}/`.
+**Сайдбар:** пошук по тегах + collapsible категорії тегів + к-ть постів. Тільки active теги. Клік → `/tags/{slug}/`.
 
 **Картка поста:**
 
 - Summary повний (без обрізання)
-- Теги — клікабельні → `/tag/{slug}/`
+- Теги — клікабельні → `/tags/{slug}/`
 - Перше джерело: `@channel` → `<a href="{tg_url}" target="_blank" rel="nofollow noopener noreferrer">`
 - Джерел > 1: кнопка `+N ▼` → inline expand
 - Dedup score (test mode), summary_score (debug)
@@ -324,7 +325,7 @@ Mobile-first.
 
 **Тематики каналів:** CRUD (назва + slug вручну), drag-and-drop сортування (@dnd-kit), sort_order визначає порядок на публічних сторінках.
 
-**Теги:** CRUD категорій і тегів, approve/reject pending, merge дублів
+**Теги:** CRUD категорій і тегів, approve/reject pending, merge дублів, пошук, сортування (новіші/А-Я), алфавітний фільтр, collapse/expand категорій
 
 **Пости:**
 
@@ -345,7 +346,7 @@ Mobile-first.
 ```jsx
 affcritic/
 ├── app/
-│   ├── layout.tsx                         # Root layout: fonts, FolderNav, AdminWrapper
+│   ├── layout.tsx                         # Root layout: fonts, FolderNav (static), AdminWrapper
 │   ├── page.tsx                           # Feed + Sidebar
 │   ├── topics/
 │   │   ├── page.tsx                       # Topics hub: category tiles + tag tiles
@@ -353,7 +354,9 @@ affcritic/
 │   ├── channels/
 │   │   ├── page.tsx                       # Channels catalog with stats + sidebar
 │   │   └── [username]/page.tsx           # Channel feed (channels lookup)
-│   ├── tag/[slug]/page.tsx                # Entity Feed по тегу
+│   ├── tags/
+│   │   ├── page.tsx                       # Tags catalog: tag tiles by category
+│   │   └── [slug]/page.tsx               # Entity Feed по тегу
 │   ├── admin/
 │   │   ├── page.tsx                       # Dashboard: metrics, charts, logs, actions
 │   │   ├── channels/page.tsx
@@ -379,11 +382,10 @@ affcritic/
 │   ├── PostInlineEdit.tsx                 # Inline summary editor (admin)
 │   ├── PostTagEditor.tsx                  # Tag autocomplete editor (admin)
 │   ├── PostSources.tsx                    # Expandable sources list
-│   ├── TagChip.tsx                        # Tag badge link
+│   ├── TagChip.tsx                        # Tag badge link → /tags/{slug}
 │   ├── Sidebar.tsx                        # Client: mode="tags" | "channels"
 │   ├── SidebarServer.tsx                  # Server: fetch tags + channel categories
-│   ├── FolderNav.tsx                      # Client: topic/category menu → /topics/{slug}
-│   ├── FolderNavServer.tsx                # Server: fetch categories (sortOrder)
+│   ├── FolderNav.tsx                      # Client: static nav (Головна, Тематики, Канали, Теги)
 │   ├── EntityHeader.tsx                   # Tag page header
 │   ├── ChannelsPage.tsx                   # Client: channels catalog with stats table
 │   ├── TopicsPage.tsx                     # Client: topics hub (category + tag tiles)
@@ -426,7 +428,7 @@ affcritic/
 10. `pending` теги не показуються на сайті
 11. GPT prompt hardcode в `lib/prompts.ts`, master-list тегів з БД
 12. Python scraper — тільки запис raw_posts, вся обробка — TypeScript
-13. `/topics/{slug}` = category feed, `/channels/{username}` = channel feed, `/tag/{slug}` = тег. Різні namespace, без cascade lookup.
+13. `/topics/{slug}` = category feed, `/channels/{username}` = channel feed, `/tags/{slug}` = тег. Різні namespace, без cascade lookup.
 14. TG посилання: `rel="nofollow noopener noreferrer"` + `target="_blank"`
 15. Summary: російська, 3-5 речень, нейтральний тон
 16. Кожен крок pipeline пише лог в `pipeline_logs`

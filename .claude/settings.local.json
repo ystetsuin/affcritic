@@ -34,7 +34,10 @@
       "Bash(find /Users/yar/Documents/work/affcritic -name *seed* -o -name *config* -o -name *README*)",
       "Bash(source .env)",
       "Bash(npx tsx -e \":*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(mkdir -p \"app/tags/[slug]\")",
+      "Bash(cp \"app/tag/[slug]/page.tsx\" \"app/tags/[slug]/page.tsx\")",
+      "Bash(npx next:*)"
     ]
   }
 }

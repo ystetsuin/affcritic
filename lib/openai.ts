@@ -106,7 +106,7 @@ export async function processUnembeddedPosts(): Promise<{
 
         await prisma.rawPost.update({
           where: { id: post.id },
-          data: { embedding: buf },
+          data: { embedding: new Uint8Array(buf) },
         });
 
         stats.processed++;

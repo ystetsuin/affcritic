@@ -41,14 +41,17 @@ interface ChannelsPageProps {
   totals: Totals;
 }
 
-function formatStat(count: number, share: number) {
-  if (count === 0) return "0";
-  const pct = Math.round(share * 100);
-  return `${count} (${pct}%)`;
+type StatsMode = "count" | "share";
+
+function formatStat(count: number, share: number, mode: StatsMode) {
+  if (count === 0) return mode === "share" ? "0%" : "0";
+  if (mode === "share") return `${Math.round(share * 100)}%`;
+  return String(count);
 }
 
 export function ChannelsPage({ channels, categories, totals }: ChannelsPageProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [statsMode, setStatsMode] = useState<StatsMode>("count");
 
   const filtered = selectedCategory
     ? channels.filter((ch) => ch.categories.some((c) => c.slug === selectedCategory))
@@ -96,6 +99,22 @@ export function ChannelsPage({ channels, categories, totals }: ChannelsPageProps
             <span>Тиждень: <b className="text-foreground">{totals.week}</b></span>
             <span>Місяць: <b className="text-foreground">{totals.month}</b></span>
             <span>Всього: <b className="text-foreground">{totals.allTime}</b></span>
+          </div>
+
+          <div className="mb-3 flex items-center gap-1">
+            {(["count", "share"] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setStatsMode(mode)}
+                className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
+                  statsMode === mode
+                    ? "bg-foreground text-background font-medium"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {mode === "count" ? "Кількість" : "%"}
+              </button>
+            ))}
           </div>
 
           <div className="overflow-x-auto">
@@ -147,16 +166,16 @@ export function ChannelsPage({ channels, categories, totals }: ChannelsPageProps
                       </div>
                     </td>
                     <td className="whitespace-nowrap py-2.5 pr-4 text-right tabular-nums">
-                      {formatStat(ch.stats.today, ch.share.today)}
+                      {formatStat(ch.stats.today, ch.share.today, statsMode)}
                     </td>
                     <td className="whitespace-nowrap py-2.5 pr-4 text-right tabular-nums">
-                      {formatStat(ch.stats.week, ch.share.week)}
+                      {formatStat(ch.stats.week, ch.share.week, statsMode)}
                     </td>
                     <td className="whitespace-nowrap py-2.5 pr-4 text-right tabular-nums">
-                      {formatStat(ch.stats.month, ch.share.month)}
+                      {formatStat(ch.stats.month, ch.share.month, statsMode)}
                     </td>
                     <td className="whitespace-nowrap py-2.5 text-right tabular-nums font-medium">
-                      {formatStat(ch.stats.allTime, ch.share.allTime)}
+                      {formatStat(ch.stats.allTime, ch.share.allTime, statsMode)}
                     </td>
                   </tr>
                 ))}

@@ -173,7 +173,7 @@ export function PostTagEditor({ postId, currentTags, onUpdate }: PostTagEditorPr
       setTags(newTags);
       onUpdate(newTags);
       // Add to allTags so it appears in future autocomplete
-      setAllTags((prev) => [...prev, { id: createdTag.id, name: createdTag.name, slug: createdTag.slug, category: { id: newCatId, name: catName } }]);
+      setAllTags((prev) => [...prev, { id: createdTag.id, name: createdTag.name, slug: createdTag.slug, category: { id: newCatId, name: catName }, aliases: [] }]);
     }
 
     setShowCreate(false);

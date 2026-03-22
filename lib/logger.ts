@@ -10,7 +10,7 @@ export async function logPipeline(
     data: {
       type,
       postId,
-      payload,
+      payload: payload as unknown as Record<string, string>,
     },
   });
 }

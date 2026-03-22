@@ -41,8 +41,8 @@ export function DashboardCharts() {
 
   useEffect(() => { fetchChart(); }, [fetchChart]);
 
-  const formatDate = (d: string) => {
-    const date = new Date(d);
+  const formatDate = (d: unknown) => {
+    const date = new Date(String(d));
     return date.toLocaleDateString("uk-UA", { day: "numeric", month: "short" });
   };
 
@@ -85,7 +85,7 @@ export function DashboardCharts() {
                 <XAxis dataKey="date" tickFormatter={formatDate} tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" />
                 <YAxis tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" tickFormatter={(v) => `$${v}`} />
                 <Tooltip
-                  formatter={(value: number) => [`$${value.toFixed(6)}`, "Cost"]}
+                  formatter={(value) => [`$${Number(value).toFixed(6)}`, "Cost"]}
                   labelFormatter={formatDate}
                   contentStyle={{ fontSize: 12, borderRadius: 6, border: "1px solid var(--border)" }}
                 />

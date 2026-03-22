@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
@@ -344,6 +344,8 @@ function SortableCategoryRow({ cat, isEditing, editName, editSlug, editError, on
 
 // ─── Active Tags Section ────────────────────────────────
 
+type SortMode = "newest" | "alpha";
+
 function ActiveTagsSection({ groups, categories, allTags, onRefresh }: {
   groups: (TagCategory & { tags: Tag[] })[];
   categories: TagCategory[];
@@ -363,6 +365,12 @@ function ActiveTagsSection({ groups, categories, allTags, onRefresh }: {
   const [editSlug, setEditSlug] = useState("");
   const [editCatId, setEditCatId] = useState("");
   const [editError, setEditError] = useState("");
+
+  // Navigation state
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [sortMode, setSortMode] = useState<SortMode>("newest");
+  const [search, setSearch] = useState("");
+  const [activeLetter, setActiveLetter] = useState<string | null>(null);
 
   // Alias state
   const [aliasTagId, setAliasTagId] = useState<string | null>(null);
@@ -436,6 +444,71 @@ function ActiveTagsSection({ groups, categories, allTags, onRefresh }: {
     onRefresh();
   };
 
+  const isSearching = search.trim().length > 0;
+  const searchLower = search.trim().toLowerCase();
+
+  const isFiltering = isSearching || activeLetter !== null;
+
+  // Filter + sort tags per group
+  const filteredGroups = useMemo(() => {
+    return groups.map((group) => {
+      let tags = group.tags;
+
+      // Filter by search
+      if (isSearching) {
+        tags = tags.filter((t) =>
+          t.name.toLowerCase().includes(searchLower) ||
+          t.aliases.some((a) => a.alias.toLowerCase().includes(searchLower))
+        );
+      }
+
+      // Filter by letter
+      if (activeLetter) {
+        tags = tags.filter((t) =>
+          t.name.charAt(0).toUpperCase() === activeLetter ||
+          t.aliases.some((a) => a.alias.charAt(0).toUpperCase() === activeLetter)
+        );
+      }
+
+      // Sort
+      if (sortMode === "alpha") {
+        tags = [...tags].sort((a, b) => a.name.localeCompare(b.name, "uk"));
+      }
+
+      return { ...group, tags };
+    }).filter((g) => !isFiltering || g.tags.length > 0);
+  }, [groups, sortMode, isSearching, searchLower, activeLetter, isFiltering]);
+
+  // Alphabet index — based on all tags (not filtered by letter)
+  const alphabetLetters = useMemo(() => {
+    const allTags = groups.flatMap((g) => g.tags);
+    const usedLetters = new Set<string>();
+    for (const t of allTags) {
+      if (t.name[0]) usedLetters.add(t.name[0].toUpperCase());
+      for (const a of t.aliases) {
+        if (a.alias[0]) usedLetters.add(a.alias[0].toUpperCase());
+      }
+    }
+    const latin = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+    const cyrillic = "АБВГДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯ".split("");
+    return [...latin, ...cyrillic].map((letter) => ({
+      letter,
+      active: usedLetters.has(letter),
+    }));
+  }, [groups]);
+
+  const handleLetterClick = (letter: string) => {
+    setActiveLetter((prev) => prev === letter ? null : letter);
+  };
+
+  const toggleCollapse = (id: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
@@ -458,9 +531,84 @@ function ActiveTagsSection({ groups, categories, allTags, onRefresh }: {
         </form>
       )}
 
-      {groups.map((group) => (
+      {/* Search + Sort controls */}
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Пошук по тегах..."
+            className="h-7 w-full rounded border border-input bg-background px-2 pr-7 text-sm sm:w-64"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              ×
+            </button>
+          )}
+        </div>
+        <div className="flex gap-1">
+          {(["newest", "alpha"] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setSortMode(mode)}
+              className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
+                sortMode === mode
+                  ? "bg-foreground text-background font-medium"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              {mode === "newest" ? "Новіші" : "А-Я"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Alphabet index */}
+      {alphabetLetters.length > 0 && (
+        <div className="sticky top-0 z-10 mb-3 flex flex-wrap items-center gap-0.5 rounded bg-background/95 py-1 backdrop-blur">
+          {activeLetter && (
+            <button
+              onClick={() => setActiveLetter(null)}
+              className="mr-1 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              Всі
+            </button>
+          )}
+          {alphabetLetters.map(({ letter, active }) => (
+            <button
+              key={letter}
+              disabled={!active}
+              onClick={() => handleLetterClick(letter)}
+              className={`size-6 rounded text-[10px] font-medium transition-colors ${
+                activeLetter === letter
+                  ? "bg-foreground text-background"
+                  : active
+                    ? "text-foreground hover:bg-muted"
+                    : "cursor-default text-muted-foreground/30"
+              }`}
+            >
+              {letter}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {filteredGroups.map((group) => {
+        const isCollapsed = !isFiltering && collapsed.has(group.id);
+        return (
         <div key={group.id} className="mb-4">
-          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{group.name}</h3>
+          <button
+            onClick={() => toggleCollapse(group.id)}
+            className="mb-1 flex w-full items-center gap-1.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+          >
+            <span className="text-[10px]">{isCollapsed ? "▶" : "▼"}</span>
+            {group.name}
+            <span className="font-normal">({group.tags.length})</span>
+          </button>
+          {!isCollapsed && (
           <div className="space-y-0.5">
             {group.tags.map((tag) => (
               <div key={tag.id} className="rounded px-3 py-1 text-sm hover:bg-muted/50">
@@ -539,8 +687,14 @@ function ActiveTagsSection({ groups, categories, allTags, onRefresh }: {
             ))}
             {group.tags.length === 0 && <p className="px-3 text-xs text-muted-foreground">Немає тегів</p>}
           </div>
+          )}
         </div>
-      ))}
+        );
+      })}
+
+      {filteredGroups.length === 0 && isFiltering && (
+        <p className="py-4 text-center text-sm text-muted-foreground">Нічого не знайдено</p>
+      )}
     </div>
   );
 }

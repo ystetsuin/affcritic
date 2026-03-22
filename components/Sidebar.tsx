@@ -130,7 +130,7 @@ export function Sidebar({ groups, mode = "tags", channelCategories, activeCatego
                 {group.tags.map((tag) => (
                   <Link
                     key={tag.slug}
-                    href={`/tag/${tag.slug}/`}
+                    href={`/tags/${tag.slug}/`}
                     className="flex items-center justify-between rounded-sm px-2 py-1 text-sm text-foreground/80 transition-colors hover:bg-muted hover:text-foreground"
                   >
                     <span className="truncate">{tag.name}</span>
