@@ -1,4 +1,5 @@
 import { prisma } from "./db";
+import type { Prisma } from "../generated/prisma/client";
 import { processUnembeddedPosts, generateSummaryForGroup, checkSummaryQuality } from "./openai";
 import { groupNewPosts } from "./grouping";
 import { getActiveTagsList } from "./prompts";
@@ -59,19 +60,23 @@ export async function runPipeline(): Promise<PipelineResult> {
 
   // 4. GPT summary for each changed group
   let summariesGenerated = 0;
+  const failedGroupIds = new Set<string>();
   for (const groupId of changedGroupIds) {
     try {
       const result = await generateSummaryForGroup(groupId, tagList);
       if (result) summariesGenerated++;
+      else failedGroupIds.add(groupId);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       errors.push(`GPT group ${groupId}: ${msg}`);
       console.error(`[pipeline] GPT group ${groupId}: ${msg}`);
+      failedGroupIds.add(groupId);
     }
   }
 
-  // 5. Quality check for each changed group
+  // 5. Quality check for each changed group (skip failed GPT groups)
   for (const groupId of changedGroupIds) {
+    if (failedGroupIds.has(groupId)) continue;
     try {
       await checkSummaryQuality(groupId);
     } catch (err) {
@@ -81,12 +86,18 @@ export async function runPipeline(): Promise<PipelineResult> {
     }
   }
 
-  // 6. Mark processed
+  // 6. Mark processed: posts with groups (excluding failed GPT), AND text-less posts (media-only)
+  const successCondition: Prisma.RawPostWhereInput = {
+    embedding: { not: null },
+    postId: { not: null },
+  };
+  if (failedGroupIds.size > 0) {
+    successCondition.postId = { notIn: Array.from(failedGroupIds) };
+  }
   await prisma.rawPost.updateMany({
     where: {
       processed: false,
-      embedding: { not: null },
-      postId: { not: null },
+      OR: [successCondition, { text: null }, { text: "" }],
     },
     data: { processed: true },
   });

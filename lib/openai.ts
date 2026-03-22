@@ -85,6 +85,11 @@ export async function processUnembeddedPosts(): Promise<{
 
     for (const post of posts) {
       if (!post.text || post.text.trim().length === 0) {
+        // Mark text-less posts as processed so they don't block the loop
+        await prisma.rawPost.update({
+          where: { id: post.id },
+          data: { processed: true },
+        });
         stats.skipped++;
         continue;
       }

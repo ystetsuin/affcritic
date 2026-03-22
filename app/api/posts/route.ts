@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const skip = (page - 1) * limit;
 
   // Build AND conditions
-  const andConditions: Prisma.PostWhereInput[] = [{ isDeleted: false }];
+  const andConditions: Prisma.PostWhereInput[] = [{ isDeleted: false, summary: { not: null } }];
 
   if (folder) {
     andConditions.push({
