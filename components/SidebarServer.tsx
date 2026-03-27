@@ -4,7 +4,7 @@ import { Sidebar, SidebarDrawer } from "./Sidebar";
 export async function SidebarServer() {
   const categories = await prisma.tagCategory.findMany({
     where: {
-      tags: { some: { status: "active", postTags: { some: {} } } },
+      tags: { some: { status: "active", postTags: { some: { post: { isDeleted: false, summary: { not: null } } } } } },
     },
     orderBy: { sortOrder: "asc" },
     include: {
@@ -14,7 +14,11 @@ export async function SidebarServer() {
           name: true,
           slug: true,
           aliases: { select: { alias: true } },
-          _count: { select: { postTags: true } },
+          _count: {
+            select: {
+              postTags: { where: { post: { isDeleted: false, summary: { not: null } } } },
+            },
+          },
         },
       },
     },

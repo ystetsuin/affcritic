@@ -1,6 +1,6 @@
 ## Progress
 
-> Останнє оновлення: 2026-03-25 (session 5)
+> Останнє оновлення: 2026-03-27 (session 6)
 
 ---
 
@@ -8,7 +8,7 @@
 
 AffCritic — платформа агрегації новин з Telegram-каналів для affiliate/iGaming індустрії. Python scraper → PostgreSQL → Next.js pipeline (embedding, grouping, GPT summary, quality check) → Feed UI + Admin panel.
 
-**Стан: Homepage Redesign in progress.** Всі core features реалізовані. Homepage redesign розпочато за `docs/homepage-mockup.html` — новий layout, компоненти, CSS. Залишилась `/about/` сторінка.
+**Стан: Homepage Redesign done, Theme system done, Tag filtering done.** Всі core features реалізовані. Homepage redesign завершено. Dark/light/system theme з persistence. Server-side sidebar tag filtering. Admin dark mode QA. Залишилась `/about/` сторінка.
 
 ---
 
@@ -43,20 +43,21 @@ AffCritic — платформа агрегації новин з Telegram-ка�
 | `prompts.ts` | buildPrompt() — system/user prompts для GPT, master-list тегів з aliases |
 | `logger.ts` | logPipeline() — запис в pipeline_logs |
 | `period.ts` | `periodToDate()`, `parsePeriod()` — shared period filter (server + API) |
+| `theme.ts` | Theme constants (`THEME_KEY`), types (`Theme`), helpers (`getStoredTheme`, `setStoredTheme`, `getResolvedTheme`) |
 | `utils.ts` | Tailwind utilities (clsx + tw-merge) |
 
 ### components/
 | Файл | Призначення |
 |------|-------------|
 | `Feed.tsx` | Server component: fetch posts з Prisma, фільтри (folder/channel/tag), summary IS NOT NULL |
-| `FeedClient.tsx` | Client component: "Показати ще", merge toolbar, split, delete handling |
+| `FeedClient.tsx` | Client component: "Показати ще", merge toolbar, split, delete, server-side tag filter reload, results count + ActiveFilters + TimeSwitcher |
 | `PostCard.tsx` | Картка поста: summary, tags, sources. Admin: merge-cb, icon buttons (pencil/trash), always-on PostTagEditor |
 | `PostInlineEdit.tsx` | Inline textarea для редагування summary (admin) |
 | `PostTagEditor.tsx` | Autocomplete tag editor з inline створенням тегів (admin) |
 | `PostSources.tsx` | Expandable джерела поста (+N), split кнопка (admin) |
 | `TagChip.tsx` | Badge-link тега → /tags/{slug}/ |
 | `Sidebar.tsx` | Client: mode="tags" (пошук тегів, collapsible) або mode="channels" (категорії каналів) |
-| `SidebarServer.tsx` | Server: fetch active tags + channel categories |
+| `SidebarServer.tsx` | Server: fetch active tags (count: non-deleted + with summary) + channel categories |
 | `FolderNav.tsx` | Client: статичне меню (Головна, Тематики, Канали, Теги) |
 | `EntityHeader.tsx` | Header для tag entity feed: ← Feed, tag name, N згадок |
 | `ChannelsPage.tsx` | Client: каталог каналів з stats таблицею + sidebar фільтр |
@@ -67,7 +68,8 @@ AffCritic — платформа агрегації новин з Telegram-ка�
 | `BottomNav.tsx` | Mobile bottom navigation bar (Стрічка, Теми, Канали, Про нас) |
 | `Breadcrumbs.tsx` | Навігаційний шлях (breadcrumbs) |
 | `TimeSwitcher.tsx` | Перемикач часового періоду (1h/1d/1w/1m) |
-| `ThemeToggle.tsx` | Dark/light theme toggle button |
+| `ThemeToggle.tsx` | Dark/light/system theme toggle (3-state cycle, hydration-safe mounted guard) |
+| `ThemeProvider.tsx` | React Context: theme state, localStorage persistence, matchMedia sync, applyTheme |
 | `Footer.tsx` | Футер: бренд, посилання, соцмережі |
 | `TagFilterContext.tsx` | React Context: selectedSlugs, toggle, reset для sidebar ↔ feed фільтрації |
 | `ActiveFilters.tsx` | Client: badge "N фільтри" + reset button |
@@ -84,7 +86,7 @@ AffCritic — платформа агрегації новин з Telegram-ка�
 ### app/ (pages)
 | Файл | Призначення |
 |------|-------------|
-| `layout.tsx` | Root layout: fonts, Topbar, LeftNav, MobileHeader, BottomNav, Footer, AdminWrapper |
+| `layout.tsx` | Root layout: fonts, inline theme script (FOIT prevention), ThemeProvider, Topbar, LeftNav, MobileHeader, BottomNav, AdminWrapper, suppressHydrationWarning |
 | `page.tsx` | Головна: Feed + Sidebar |
 | `topics/page.tsx` | Topics hub: category tiles + tag tiles |
 | `topics/[slug]/page.tsx` | Category feed (channel_categories lookup) |
@@ -181,7 +183,7 @@ AffCritic — платформа агрегації новин з Telegram-ка�
 
 Дизайн-специфікація: `docs/homepage-mockup.html`
 
-### Нові компоненти (створені, uncommitted)
+### Нові компоненти (committed)
 - [x] `Topbar.tsx` — desktop topbar з логотипом, пошуком, CTA, ThemeToggle
 - [x] `LeftNav.tsx` — desktop вертикальна іконна навігація (Slack-стиль, active indicator)
 - [x] `MobileHeader.tsx` — mobile header
@@ -191,7 +193,7 @@ AffCritic — платформа агрегації новин з Telegram-ка�
 - [x] `ThemeToggle.tsx` — dark/light toggle
 - [x] `Footer.tsx` — футер (бренд, посилання, соцмережі)
 
-### Оновлені файли (uncommitted)
+### Оновлені файли (committed)
 - `app/globals.css` — +1164 рядків CSS (повний redesign стилів з мокапу)
 - `app/layout.tsx` — новий root layout з Topbar, LeftNav, MobileHeader, BottomNav, Footer
 - `app/page.tsx` — homepage з Breadcrumbs, TimeSwitcher, active filters, redesigned feed
@@ -210,7 +212,7 @@ AffCritic — платформа агрегації новин з Telegram-ка�
 - [x] `ActiveFilters.tsx` — badge "N фільтри" + reset кнопка
 - [x] Sidebar: `<Link>` → `<label>` + checkbox, checked state з контексту
 - [x] SidebarDrawer (mobile): chip-toggles, reset, badge на іконці фільтрів
-- [x] FeedClient: `useMemo` фільтрація по `selectedSlugs` (OR логіка)
+- [x] FeedClient: server-side reload по `selectedSlugs` (OR логіка, API `tags=slug1,slug2`)
 - [x] Всі feed-сторінки обгорнуті `<TagFilterProvider>`
 
 ### TimeSwitcher — Period Filtering (session 5)
@@ -234,8 +236,33 @@ AffCritic — платформа агрегації новин з Telegram-ка�
 - [x] Admin badge в Topbar: `.admin-badge` (red pill)
 - [x] Hydration fix: `useAdmin()` returns false until mounted
 
+### Theme System (session 6)
+- [x] `lib/theme.ts` — constants, types, helpers (getStoredTheme, setStoredTheme, getResolvedTheme)
+- [x] `ThemeProvider.tsx` — React Context, localStorage persistence, matchMedia listener for system mode
+- [x] `ThemeToggle.tsx` — 3-state cycle (dark → light → system), hydration-safe mounted guard
+- [x] `layout.tsx` — inline `<script>` in `<head>` (FOIT prevention), `suppressHydrationWarning`
+- [x] `globals.css` — `@custom-variant light (.light &)` for Tailwind v4
+
+### Admin Dark Mode QA (session 6)
+- [x] Custom `light:` Tailwind variant (dark-first: default = dark, `light:` = light overrides)
+- [x] `admin/page.tsx` — LOG_TYPE_COLORS, MetricCard subColor, scraper/pipeline status
+- [x] `admin/logs/page.tsx` — TYPE_COLORS
+- [x] `admin/posts/page.tsx` — scoreColor, deleted post border, edited/grouped/deleted badges
+- [x] `admin/channels/page.tsx` — Active/Inactive toggle
+- [x] `admin/tags/page.tsx` — Pending section border/bg/text
+- [x] `admin/settings/page.tsx` — save success text
+- [x] `DashboardCharts.tsx` — Tooltip contentStyle (background + color via CSS vars)
+
+### Server-side Tag Filtering Fix (session 6)
+- [x] API `/api/posts` — multi-tag support: `tags=slug1,slug2` with OR logic (`slug IN [...]`)
+- [x] FeedClient — reload from server on tag selection instead of client-side filtering
+- [x] "Знайдено постів: N" + ActiveFilters moved into FeedClient (reactive updates)
+- [x] TimeSwitcher moved into FeedClient results row (same line as count)
+- [x] SidebarServer — tag counts filter by `isDeleted: false, summary: not null`
+- [x] Hydration fix — `suppressHydrationWarning` on card-time span for relative time
+
 ### TODO
-- [ ] Light/dark theme QA для всіх нових компонентів
+- [ ] `/about/` сторінка
 
 ---
 
@@ -366,3 +393,8 @@ AffCritic — платформа агрегації новин з Telegram-ка�
 79. Bulk Toolbar: sticky bottom (.bulk-toolbar), merge + batch delete, shows at >= 1 selected
 80. Admin Badge: .admin-badge в Topbar (red pill, visible only with ?admin=1)
 81. Hydration Fix: AdminContext mounted guard — useAdmin() returns false until client mount
+82. Theme System: ThemeProvider + ThemeToggle (dark/light/system), FOIT-safe inline script, localStorage persistence, OS theme sync
+83. Admin Dark Mode QA: custom Tailwind `light:` variant, fixed 23 hardcoded color instances across 7 admin files, theme-aware chart tooltips
+84. Server-side Tag Filtering: API multi-tag support (`tags=slug1,slug2`), FeedClient reload on tag selection, sidebar counts filter non-deleted
+85. Unified Feed Controls: "Знайдено постів" + ActiveFilters + TimeSwitcher in one row inside FeedClient
+86. Hydration Fix: suppressHydrationWarning on card-time span for relative time rendering

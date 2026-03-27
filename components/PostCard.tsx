@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { TagChip } from "./TagChip";
 import { PostSources } from "./PostSources";
 import { useAdmin } from "./AdminContext";
@@ -50,25 +50,12 @@ function formatRelativeTime(dateStr: string): string {
   if (diffHr < 24) return `${diffHr} год тому`;
   if (diffDay < 7) return `${diffDay} дн тому`;
 
-  return formatAbsoluteDate(dateStr);
-}
-
-function formatAbsoluteDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("uk-UA", {
     day: "numeric",
     month: "short",
   });
 }
 
-function RelativeTime({ date }: { date: string }) {
-  const [text, setText] = useState(() => formatAbsoluteDate(date));
-
-  useEffect(() => {
-    setText(formatRelativeTime(date));
-  }, [date]);
-
-  return <>{text}</>;
-}
 
 export function PostCard({ post, onUpdate, onDelete, selected, onToggleSelect, onSplit }: {
   post: PostData;
@@ -126,7 +113,7 @@ export function PostCard({ post, onUpdate, onDelete, selected, onToggleSelect, o
               onChange={onToggleSelect}
             />
           )}
-          <span className="card-time"><RelativeTime date={currentPost.createdAt} /></span>
+          <span className="card-time" suppressHydrationWarning>{formatRelativeTime(currentPost.createdAt)}</span>
         </div>
 
         {isAdmin && (

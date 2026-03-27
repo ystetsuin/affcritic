@@ -5,6 +5,8 @@ import { PostCard } from "./PostCard";
 import type { PostData } from "./PostCard";
 import { useAdmin } from "./AdminContext";
 import { useTagFilter } from "./TagFilterContext";
+import { ActiveFilters } from "./ActiveFilters";
+import { TimeSwitcher } from "./TimeSwitcher";
 
 interface FeedClientProps {
   initialPosts: PostData[];
@@ -63,33 +65,31 @@ export function FeedClient({
   }, [folder, channel, tag, period, selectedSlugs]);
 
   // Reload from server when sidebar tag filter changes
-  const prevSlugsRef = useRef(selectedSlugs.join(","));
-  useEffect(() => {
-    const key = selectedSlugs.join(",");
-    if (prevSlugsRef.current === key) return;
-    prevSlugsRef.current = key;
+  const slugsKey = selectedSlugs.join(",");
+  const prevSlugsRef = useRef(slugsKey);
+  const buildParamsRef = useRef(buildParams);
+  buildParamsRef.current = buildParams;
 
+  useEffect(() => {
+    if (prevSlugsRef.current === slugsKey) return;
+    prevSlugsRef.current = slugsKey;
+
+    const params = buildParamsRef.current({ page: "1", limit: String(pageSize) });
     let cancelled = false;
-    const reload = async () => {
-      setLoading(true);
-      const params = buildParams({ page: "1", limit: String(pageSize) });
-      try {
-        const res = await fetch(`/api/posts?${params}`);
-        const data = await res.json();
+    setLoading(true);
+    fetch(`/api/posts?${params}`)
+      .then((res) => res.json())
+      .then((data) => {
         if (!cancelled) {
           setPosts(data.posts);
           setTotalCount(data.pagination.total);
           setPage(1);
         }
-      } catch (err) {
-        console.error("Failed to filter posts:", err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    reload();
+      })
+      .catch((err) => console.error("Failed to filter posts:", err))
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [selectedSlugs, buildParams, pageSize]);
+  }, [slugsKey, pageSize]);
 
   const loadMore = useCallback(async () => {
     setLoading(true);
@@ -187,27 +187,25 @@ export function FeedClient({
     }
   };
 
-  if (posts.length === 0) {
+  if (posts.length === 0 && !loading) {
     return (
-      <div style={{ textAlign: "center", padding: "64px 0", color: "var(--text-muted)" }}>
-        Поки що немає новин
+      <div>
+        <FeedResultsCount total={totalCount} loading={loading} />
+        <div style={{ textAlign: "center", padding: "64px 0", color: "var(--text-muted)" }}>
+          {selectedSlugs.length > 0 ? "Немає постів з обраними тегами" : "Поки що немає новин"}
+        </div>
       </div>
     );
   }
 
   return (
     <div>
+      <FeedResultsCount total={totalCount} loading={loading} />
+
       {/* Split loading */}
       {splitting && (
         <div className="admin-toolbar" style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
           <Spinner /> <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>Відокремлення джерела...</span>
-        </div>
-      )}
-
-      {/* No results for active filter */}
-      {selectedSlugs.length > 0 && posts.length === 0 && !loading && (
-        <div style={{ textAlign: "center", padding: "48px 0", color: "var(--text-muted)", fontSize: 13 }}>
-          Немає постів з обраними тегами
         </div>
       )}
 
@@ -252,6 +250,20 @@ export function FeedClient({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function FeedResultsCount({ total, loading }: { total: number; loading: boolean }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+      <div className="feed-meta">
+        <span className="feed-results">
+          Знайдено постів: <span>{loading ? "…" : total}</span>
+        </span>
+        <ActiveFilters />
+      </div>
+      <TimeSwitcher />
     </div>
   );
 }

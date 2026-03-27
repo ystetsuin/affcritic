@@ -299,7 +299,7 @@ Mobile-first.
 
 **Меню:** фіксовані посилання: Головна `/`, Тематики `/topics`, Канали `/channels`, Теги `/tags`.
 
-**Сайдбар:** пошук по тегах + collapsible категорії тегів + к-ть постів. Тільки active теги. Клік → `/tags/{slug}/`.
+**Сайдбар:** пошук по тегах + collapsible категорії тегів + к-ть постів (тільки non-deleted з summary). Тільки active теги. Checkbox-фільтрація → FeedClient перезавантажує з сервера (OR логіка). Mobile: overlay з chip-toggles.
 
 **Картка поста:**
 
@@ -346,8 +346,8 @@ Mobile-first.
 ```jsx
 affcritic/
 ├── app/
-│   ├── layout.tsx                         # Root layout: fonts, FolderNav (static), AdminWrapper
-│   ├── page.tsx                           # Feed + Sidebar
+│   ├── layout.tsx                         # Root layout: fonts, Topbar, LeftNav, MobileHeader, BottomNav, ThemeProvider, AdminWrapper
+│   ├── page.tsx                           # Feed + Sidebar + Breadcrumbs
 │   ├── topics/
 │   │   ├── page.tsx                       # Topics hub: category tiles + tag tiles
 │   │   └── [slug]/page.tsx               # Category feed (channel_categories lookup)
@@ -377,15 +377,25 @@ affcritic/
 │       └── scraper/run/                   # Manual scraper trigger
 ├── components/
 │   ├── Feed.tsx                           # Server: fetch posts
-│   ├── FeedClient.tsx                     # Client: load more, merge/split, delete
+│   ├── FeedClient.tsx                     # Client: load more, merge/split, delete, tag filter reload, results count, TimeSwitcher
 │   ├── PostCard.tsx                       # Post card з admin controls (edit, tags, delete)
 │   ├── PostInlineEdit.tsx                 # Inline summary editor (admin)
 │   ├── PostTagEditor.tsx                  # Tag autocomplete editor (admin)
 │   ├── PostSources.tsx                    # Expandable sources list
 │   ├── TagChip.tsx                        # Tag badge link → /tags/{slug}
-│   ├── Sidebar.tsx                        # Client: mode="tags" | "channels"
-│   ├── SidebarServer.tsx                  # Server: fetch tags + channel categories
-│   ├── FolderNav.tsx                      # Client: static nav (Головна, Тематики, Канали, Теги)
+│   ├── Sidebar.tsx                        # Client: mode="tags" (checkbox filter) | "channels"
+│   ├── SidebarServer.tsx                  # Server: fetch active tags (non-deleted posts only) + channel categories
+│   ├── TagFilterContext.tsx               # React Context: selectedSlugs, toggle, reset (sidebar ↔ feed)
+│   ├── ActiveFilters.tsx                  # Client: badge "N фільтри" + reset button
+│   ├── Topbar.tsx                         # Desktop topbar: logo, search, CTA, ThemeToggle, admin badge
+│   ├── LeftNav.tsx                        # Desktop vertical icon nav (Slack-style)
+│   ├── MobileHeader.tsx                   # Mobile header: logo + search + ThemeToggle
+│   ├── BottomNav.tsx                      # Mobile bottom nav bar
+│   ├── Breadcrumbs.tsx                    # Navigation breadcrumbs
+│   ├── TimeSwitcher.tsx                   # Period switcher (День/Тиждень/Місяць/Все), URL param ?period=
+│   ├── ThemeProvider.tsx                  # React Context: theme (dark/light/system), localStorage, matchMedia
+│   ├── ThemeToggle.tsx                    # Theme toggle button (dark → light → system cycle)
+│   ├── Footer.tsx                         # Footer: brand, links, social
 │   ├── EntityHeader.tsx                   # Tag page header
 │   ├── ChannelsPage.tsx                   # Client: channels catalog with stats table
 │   ├── TopicsPage.tsx                     # Client: topics hub (category + tag tiles)
@@ -400,6 +410,8 @@ affcritic/
 │   ├── pipeline.ts                        # Pipeline orchestration
 │   ├── prompts.ts                         # GPT prompts
 │   ├── logger.ts                          # Pipeline logging
+│   ├── period.ts                          # periodToDate(), parsePeriod() — shared period filter
+│   ├── theme.ts                           # Theme constants, getStoredTheme/setStoredTheme/getResolvedTheme
 │   └── utils.ts                           # Tailwind utilities
 ├── prisma/
 │   ├── schema.prisma                      # 13 models (incl. BlockedPost), 2 enums
@@ -437,3 +449,7 @@ affcritic/
 19. Pipeline: media-only raw_posts (text=null) маркуються `processed=true` одразу в embedding кроці
 20. Pipeline: якщо GPT падає для групи → raw_posts не маркуються processed, quality skip
 21. Feed фільтрує `summary IS NOT NULL` — пости без summary не показуються
+22. Sidebar tag count рахує тільки `isDeleted: false, summary IS NOT NULL` — збігається з Feed
+23. Multi-tag фільтрація: API `tags=slug1,slug2` → OR логіка (`postTags.some.tag.slug IN [...]`)
+24. Dark-first CSS: `:root` = dark, `.light` = light overrides. Tailwind: `@custom-variant light (.light &)`
+25. Theme persistence: inline `<script>` в `<head>` (FOIT prevention), `localStorage`, `matchMedia` listener
