@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 const AdminContext = createContext(false);
 
@@ -9,5 +9,8 @@ export function AdminProvider({ isAdmin, children }: { isAdmin: boolean; childre
 }
 
 export function useAdmin() {
-  return useContext(AdminContext);
+  const isAdmin = useContext(AdminContext);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted && isAdmin;
 }

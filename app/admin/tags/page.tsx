@@ -118,13 +118,13 @@ function PendingSection({ tags, categories, allTags, onRefresh }: {
   };
 
   return (
-    <div className="rounded-lg border-2 border-amber-200 bg-amber-50/50 p-4">
-      <h2 className="mb-3 text-sm font-semibold uppercase text-amber-700">
+    <div className="rounded-lg border-2 border-amber-500/40 bg-amber-500/10 light:border-amber-200 light:bg-amber-50/50 p-4">
+      <h2 className="mb-3 text-sm font-semibold uppercase text-amber-400 light:text-amber-700">
         Pending ({tags.length})
       </h2>
       <div className="space-y-2">
         {tags.map((tag) => (
-          <div key={tag.id} className="flex flex-col gap-2 rounded border border-amber-200 bg-background p-3 sm:flex-row sm:items-center">
+          <div key={tag.id} className="flex flex-col gap-2 rounded border border-amber-500/30 light:border-amber-200 bg-background p-3 sm:flex-row sm:items-center">
             {editingId === tag.id ? (
               <div className="flex flex-1 gap-2">
                 <input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-7 flex-1 rounded border border-input bg-background px-2 text-sm" />

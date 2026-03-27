@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Breadcrumbs } from "./Breadcrumbs";
 
 interface EntityHeaderProps {
   tagName: string;
@@ -8,19 +8,19 @@ interface EntityHeaderProps {
 
 export function EntityHeader({ tagName, categoryName, mentionsCount }: EntityHeaderProps) {
   return (
-    <div className="mb-6 border-b border-border pb-4">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/" className="transition-colors hover:text-foreground">
-          ← Feed
-        </Link>
-      </div>
-      <div className="mt-2 flex items-baseline gap-3">
-        <h1 className="text-xl font-bold tracking-tight">{tagName}</h1>
-        <span className="text-sm text-muted-foreground">
-          {mentionsCount} згадок
+    <div style={{ marginBottom: 16 }}>
+      <Breadcrumbs items={[
+        { label: "AffCritic", href: "/" },
+        { label: "Теги", href: "/tags" },
+        { label: tagName },
+      ]} />
+      <h1 className="feed-title">{tagName}</h1>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span className="feed-results">
+          <span>{mentionsCount}</span> згадок
         </span>
+        <span className="tag-chip">{categoryName}</span>
       </div>
-      <p className="mt-0.5 text-xs text-muted-foreground">{categoryName}</p>
     </div>
   );
 }

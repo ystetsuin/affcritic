@@ -1,38 +1,33 @@
-Claude Code додав у `app/admin/tags/page.tsx` пошук, сортування і алфавітний вказівник (A-Z + А-Я). Але алфавітний фільтр працює неправильно: клік на букву не приховує теги що починаються на іншу букву.
+## Контекст
 
-Референс: `app/admin/tags/page.tsx`.
+В коді є hardcoded Tailwind кольори які не адаптуються під dark mode. Потрібен аудит і фікс.
 
-## Проблема
-
-Імовірна причина: фільтрація по букві застосовується до неправильного поля, або порівняння відбувається без `toLowerCase()` / `toUpperCase()`, або стан `activeLetter` не скидає пагінацію/список коректно.
+Референс: `frontend.md → Кольори в компонентах (hardcoded Tailwind)`
 
 ## Action Items
 
-- [ ]  Знайти в `app/admin/tags/page.tsx` state що відповідає за активну букву (наприклад `activeLetter`)
-- [ ]  Виправити логіку фільтрації — тег показується якщо `activeLetter` збігається з першою буквою `tag.name` **АБО** першою буквою будь-якого з `tag.aliases[]`. Точна умова:
-    - `tag.name.charAt(0).toUpperCase() === activeLetter`
-    - АБО `tag.aliases.some(a => a.alias.charAt(0).toUpperCase() === activeLetter)`
-- [ ]  Переконатись що `tag.aliases` включається в API response для `/api/tags` — якщо ні, додати `include: { aliases: true }` в Prisma query
-    - **Приклад:** тег `Facebook` з aliases `["Фейсбук", "ФБ"]` — показується при кліку `F` (по name), при кліку `Ф` (по обох aliases). При кліку `A`, `B`, `G` — не показується
-- [ ]  Переконатись що фільтр застосовується до відображуваного списку, а не до окремого підсписку
-- [ ]  При кліку на букву — скидати search input (або застосовувати обидва фільтри одночасно: пошук AND буква)
-- [ ]  При повторному кліку на ту саму букву або кліку "Всі" — скидати фільтр, показувати всі теги
-- [ ]  Переконатись що inactive букви (сірі) — це букви для яких немає жодного тега. Вони не мають реагувати на клік
-- [ ]  Перевірити кириличні букви: `tag.name.charAt(0)` для кирилиці має коректно порівнюватись
+- [ ]  **PostCard.tsx** — score badges: `text-emerald-700` / `text-amber-600` / `text-red-600`. Додати `dark:` варіанти (напр. `dark:text-emerald-400`, `dark:text-amber-400`, `dark:text-red-400`).
+- [ ]  **DashboardCharts.tsx** — Recharts використовує hardcoded HEX (`#10b981`, `#6366f1`, `#f59e0b`, `#ef4444`). Ці кольори OK для dark mode (яскраві на темному фоні). Перевірити: Tooltip фон, grid лінії, axis labels — можуть потребувати `dark:` стилів або CSS variable-based кольорів для Recharts props.
+- [ ]  **Admin pages** — type badges (`bg-blue-100`, `bg-purple-100`, etc.). Додати `dark:bg-blue-900/30 dark:text-blue-300` і аналогічно для всіх кольорів.
+- [ ]  **TagChip.tsx** — `bg-secondary`, `border-border`. Ці вже на CSS variables — перевірити що dark значення виглядають OK.
+- [ ]  **Sidebar.tsx** — перевірити hover states, active states, mobile drawer background.
+- [ ]  **FolderNav.tsx** — active state `bg-foreground text-background` — повинно працювати автоматично через CSS vars, перевірити.
+- [ ]  **Всі admin сторінки** — пройти кожну в dark mode, зафіксити нечитабельні елементи (inputs, tables, modals).
 
 ## Definition of Done
 
-- Клік на букву `Л` → показуються тільки теги що починаються на `Л` або `l`
-- Клік на вже активну букву або кнопку скидання → показуються всі теги
-- Пошук і буквений фільтр працюють одночасно (AND логіка)
-- Inactive (сірі) букви не реагують на клік
-- Тег з alias "Лотерея" показується при кліку на `Л`, навіть якщо сам тег називається інакше
+- Всі публічні сторінки читабельні в dark mode.
+- Admin панель читабельна в dark mode.
+- Charts, badges, tags визуально коректні.
+- Немає білих фонів / невидимого тексту в dark mode.
 
 ## QA Checklist
 
-- [ ]  `/admin/tags/` → клік на `Л` → тільки теги на `Л`
-- [ ]  Клік на `A` (латиниця) → тільки теги на `A`
-- [ ]  Ввести текст в пошук + клік на букву → фільтруються обидва
-- [ ]  Клік на сіру (inactive) букву → нічого не відбувається
-- [ ]  Тег з alias "Лотерея" показується при кліку `Л` (навіть якщо сам тег називається інакше)
-- [ ]  Клік на активну букву повторно → скидає фільтр, всі теги видимі
+- [ ]  `/` в dark mode — Feed, PostCard, TagChip, Sidebar, FolderNav.
+- [ ]  `/tag/{slug}/` в dark mode — EntityHeader, Feed.
+- [ ]  `/channels/` в dark mode — stats table, sidebar.
+- [ ]  `/topics/` в dark mode — category tiles, tag tiles.
+- [ ]  `/admin/` в dark mode — dashboard metrics, charts, logs.
+- [ ]  `/admin/tags/` в dark mode — pending badges, DnD sort.
+- [ ]  `/admin/posts/` в dark mode — inline edit, merge toolbar.
+- [ ]  Mobile 375px dark mode — drawer sidebar, cards.

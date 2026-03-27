@@ -87,7 +87,7 @@ export function DashboardCharts() {
                 <Tooltip
                   formatter={(value) => [`$${Number(value).toFixed(6)}`, "Cost"]}
                   labelFormatter={formatDate}
-                  contentStyle={{ fontSize: 12, borderRadius: 6, border: "1px solid var(--border)" }}
+                  contentStyle={{ fontSize: 12, borderRadius: 6, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" }}
                 />
                 <Bar dataKey="cost_usd" fill="#10b981" radius={[2, 2, 0, 0]} />
               </BarChart>
@@ -114,7 +114,7 @@ export function DashboardCharts() {
                 <YAxis tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" />
                 <Tooltip
                   labelFormatter={formatDate}
-                  contentStyle={{ fontSize: 12, borderRadius: 6, border: "1px solid var(--border)" }}
+                  contentStyle={{ fontSize: 12, borderRadius: 6, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" }}
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Line type="monotone" dataKey="posts_processed" stroke="#6366f1" strokeWidth={2} dot={false} name="Processed" />

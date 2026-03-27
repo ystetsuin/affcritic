@@ -1,0 +1,2229 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AffCritic — Homepage Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:             #0D1117;
+    --surface:        #161B22;
+    --surface-2:      #21262D;
+    --border:         rgba(255,255,255,0.08);
+    --border-hover:   rgba(255,255,255,0.16);
+    --text:           #FFFFFF;
+    --text-secondary: rgba(255,255,255,0.65);
+    --text-muted:     rgba(255,255,255,0.35);
+    --tag-bg:         rgba(0,112,243,0.15);
+    --tag-text:       #58A6FF;
+    --tag-hover-bg:   rgba(0,112,243,0.25);
+    --tag-hover-text: #FFFFFF;
+    --green:          #3FB950;
+    --green-bg:       rgba(63,185,80,0.12);
+    --amber:          #D29922;
+    --amber-bg:       rgba(210,153,34,0.12);
+    --red:            #F85149;
+    --red-bg:         rgba(248,81,73,0.12);
+    --source-bg:      rgba(255,255,255,0.03);
+    --nav-h:          48px;
+    --sidebar-w:      224px;
+  }
+
+  /* Light theme */
+  .light {
+    --bg:             #F5F5F5;
+    --surface:        #FFFFFF;
+    --surface-2:      #E8E8E8;
+    --border:         rgba(0,0,0,0.08);
+    --border-hover:   rgba(0,0,0,0.16);
+    --text:           #0D1117;
+    --text-secondary: #666666;
+    --text-muted:     rgba(0,0,0,0.35);
+    --tag-bg:         rgba(0,112,243,0.10);
+    --tag-text:       #0070F3;
+    --tag-hover-bg:   rgba(0,112,243,0.18);
+    --tag-hover-text: #003D82;
+    --green:          #1A7F37;
+    --green-bg:       rgba(26,127,55,0.10);
+    --amber:          #9A6700;
+    --amber-bg:       rgba(154,103,0,0.10);
+    --red:            #CF222E;
+    --red-bg:         rgba(207,34,46,0.10);
+    --source-bg:      rgba(0,0,0,0.02);
+  }
+
+  /* Light overrides for frosted glass */
+  .light .d-topbar {
+    background: rgba(245,245,245,0.85);
+  }
+
+  .light .d-nav-inner {
+    background: rgba(255,255,255,0.85);
+    border-right-color: var(--border);
+  }
+
+  .light .d-sidebar {
+    background: rgba(255,255,255,0.75);
+    border-right-color: var(--border);
+  }
+
+  .light .m-header {
+    background: rgba(245,245,245,0.90);
+    border-bottom-color: var(--border);
+  }
+
+  .light .m-bottom-nav {
+    background: rgba(245,245,245,0.92);
+    border-top-color: var(--border);
+  }
+
+  .light .post-card {
+    background: var(--surface);
+    border-color: var(--border);
+  }
+
+  .light .post-card:hover {
+    border-color: var(--border-hover);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  }
+
+  .light .d-nav-item.active .d-nav-icon { background: #0070F3 !important; }
+  .light .d-nav-item:not(.active) .d-nav-icon { background: var(--surface-2) !important; }
+  .light .d-nav-item:not(.active) .d-nav-icon svg { stroke: var(--text-secondary); }
+  .light .d-nav-item.active .d-nav-label { color: var(--text); }
+
+  .light .topbar-btn {
+    background: linear-gradient(135deg, #0070F3 0%, #0058C4 100%);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,112,243,0.25);
+  }
+
+  .light .m-filter-overlay {
+    background: var(--bg);
+  }
+
+  .light .sidebar-tag.checked {
+    background: rgba(0,112,243,0.08);
+  }
+
+  .light .sidebar-tag:hover {
+    background: rgba(0,0,0,0.04);
+  }
+
+  .light .source-row {
+    border-bottom-color: var(--border);
+  }
+
+  .light .sources-panel {
+    background: rgba(0,0,0,0.02);
+    border-color: var(--border);
+  }
+
+  .light .m-filter-tag:has(.m-tag-cb:checked) {
+    background: rgba(0,112,243,0.08);
+    border-color: rgba(0,112,243,0.2);
+  }
+
+  .light .tag-cb:checked {
+    background: #0070F3;
+    border-color: #0070F3;
+  }
+
+  .light .tag-cb {
+    border-color: rgba(0,0,0,0.2);
+  }
+
+  .light .tag-cb:hover:not(:checked) {
+    border-color: rgba(0,0,0,0.4);
+  }
+
+  .light .time-switcher,
+  .light .m-time-switcher {
+    background: rgba(0,0,0,0.04);
+    border-color: rgba(0,0,0,0.08);
+  }
+
+  .light .ts-btn,
+  .light .m-ts-btn {
+    color: rgba(0,0,0,0.35);
+  }
+
+  .light .ts-btn:hover,
+  .light .m-ts-btn:hover {
+    color: rgba(0,0,0,0.6);
+  }
+
+  .light .ts-btn.active,
+  .light .m-ts-btn.active {
+    background: #0070F3;
+    color: #fff;
+  }
+
+  /* Theme toggle button */
+  .theme-toggle {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: border-color 0.15s, color 0.15s;
+    flex-shrink: 0;
+  }
+
+  .theme-toggle:hover { border-color: var(--border-hover); color: var(--text); }
+  .theme-toggle svg { width: 16px; height: 16px; }
+
+  /* Hide/show sun/moon icons */
+  .theme-toggle .icon-sun { display: none; }
+  .theme-toggle .icon-moon { display: block; }
+  .light .theme-toggle .icon-sun { display: block; }
+  .light .theme-toggle .icon-moon { display: none; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    font-size: 14px;
+  }
+
+  /* Typography: Manrope for headlines */
+  h1, .logo, .d-logo, .footer-logo {
+    font-family: 'Manrope', sans-serif;
+  }
+
+  /* ── TOGGLE BUTTONS ── */
+  .view-toggle {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 1000;
+    display: flex;
+    gap: 6px;
+  }
+
+  .view-toggle button {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .view-toggle button.active {
+    background: var(--text);
+    color: #fff;
+    border-color: var(--text);
+  }
+
+  /* ── LAYOUT WRAPPERS ── */
+  .layout { display: none; }
+  .layout.visible { display: block; }
+
+  /* ═══════════════════════════════════════
+     MOBILE  (375px)
+  ═══════════════════════════════════════ */
+  #mobile {
+    max-width: 375px;
+    margin: 0 auto;
+    box-shadow: 0 0 0 1px var(--border), 0 8px 40px rgba(0,0,0,0.12);
+    background: var(--bg);
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* Header */
+  .m-header {
+    background: rgba(13, 17, 23, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    padding: 0 16px;
+    height: var(--nav-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .logo {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .logo span { color: var(--text-muted); font-weight: 400; }
+
+  .m-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+  }
+
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* FolderNav mobile */
+  .m-foldernav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .m-foldernav::-webkit-scrollbar { display: none; }
+
+  .fnav-item {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    padding: 10px 10px;
+    white-space: nowrap;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.12s, border-color 0.12s;
+    text-decoration: none;
+    display: block;
+  }
+
+  .fnav-item:hover { color: var(--text-secondary); }
+  .fnav-item.active { color: var(--text); border-bottom-color: var(--text); }
+
+  /* Feed mobile */
+  .m-feed {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ═══════════════════════════════════════
+     DESKTOP  (1280px)
+  ═══════════════════════════════════════ */
+  #desktop {
+    max-width: 1280px;
+    margin: 0 auto;
+    background: var(--bg);
+    min-height: 100vh;
+  }
+
+  /* Topbar */
+  .d-topbar {
+    background: rgba(13, 17, 23, 0.80);
+    backdrop-filter: blur(20px) saturate(1.8);
+    -webkit-backdrop-filter: blur(20px) saturate(1.8);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .d-topbar-inner {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0 24px 0 16px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  .d-logo {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    margin-right: 32px;
+    flex-shrink: 0;
+  }
+
+  .d-logo span { color: var(--text-muted); font-weight: 400; }
+
+  /* FolderNav desktop */
+  .d-foldernav {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex: 1;
+  }
+
+  .d-fnav-item {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    padding: 0 14px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.12s, border-color 0.12s;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .d-fnav-item:hover { color: var(--text-secondary); }
+  .d-fnav-item.active { color: var(--text); border-bottom-color: var(--text); }
+
+  .d-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .d-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    width: 200px;
+    transition: border-color 0.15s;
+    cursor: text;
+  }
+
+  .d-search:hover { border-color: var(--border-hover); }
+
+  .d-search svg { width: 14px; height: 14px; color: var(--text-muted); flex-shrink: 0; }
+
+  .d-search span {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .topbar-btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #000;
+    background: linear-gradient(135deg, #80B3FF 0%, #5A8AF5 50%, #7B6FF0 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 7px 18px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    transition: opacity 0.15s, box-shadow 0.15s;
+    box-shadow: 0 2px 8px rgba(90,138,245,0.3);
+  }
+
+  .topbar-btn:hover { opacity: 0.88; box-shadow: 0 4px 16px rgba(90,138,245,0.45); }
+
+  /* Main layout: flex wrapper so nav sticky works independently */
+  .d-body {
+    display: flex;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  /* Content area: sidebar + feed as 2-col grid */
+  .d-content {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Left nav — spacer in flex, inner fixed */
+  .d-nav {
+    width: 72px;
+    flex-shrink: 0;
+  }
+
+  .d-nav-inner {
+    position: fixed;
+    top: 52px;
+    width: 72px;
+    height: calc(100vh - 52px);
+    background: rgba(22, 27, 34, 0.80);
+    backdrop-filter: blur(20px) saturate(1.8);
+    -webkit-backdrop-filter: blur(20px) saturate(1.8);
+    border-right: 1px solid rgba(255,255,255,0.07);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0;
+    gap: 0;
+    z-index: 9;
+  }
+
+  .d-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 6px;
+    border-radius: 10px;
+    width: 56px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.12s;
+    position: relative;
+  }
+
+  .d-nav-item:hover { background: rgba(255,255,255,0.05); }
+
+  .d-nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 20px;
+    border-radius: 0 3px 3px 0;
+    background: #0070F3;
+  }
+
+  .d-nav-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-radius 0.2s;
+  }
+
+  .d-nav-item:hover .d-nav-icon,
+  .d-nav-item.active .d-nav-icon { border-radius: 12px; }
+
+  .d-nav-icon svg { width: 18px; height: 18px; }
+
+  .d-nav-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.35);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .d-nav-item.active .d-nav-label { color: #FFFFFF; font-weight: 600; }
+  .d-nav-item:hover .d-nav-label { color: rgba(255,255,255,0.65); }
+
+  .rs-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    align-self: flex-start;
+    padding-left: 4px;
+  }
+
+  .rs-topics {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+  }
+
+  .rs-topic {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 4px;
+    border-radius: 12px;
+    text-decoration: none;
+    width: 64px;
+    transition: background 0.12s;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .rs-topic:hover { background: rgba(0,0,0,0.04); }
+
+  .rs-topic.active::before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 24px;
+    border-radius: 0 3px 3px 0;
+    background: var(--text);
+  }
+
+  .rs-topic-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: border-radius 0.2s;
+  }
+
+  .rs-topic:hover .rs-topic-icon { border-radius: 12px; }
+  .rs-topic.active .rs-topic-icon { border-radius: 12px; }
+
+  .rs-topic-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .rs-topic-name {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .rs-topic.active .rs-topic-name { color: var(--text); font-weight: 600; }
+  .rs-topic:hover .rs-topic-name { color: var(--text-secondary); }
+
+  /* Tags Sidebar — iOS frosted glass dark */
+  .d-sidebar {
+    position: sticky;
+    top: 52px;
+    height: calc(100vh - 52px);
+    overflow-y: auto;
+    border-right: 1px solid rgba(255,255,255,0.07);
+    background: rgba(22, 27, 34, 0.65);
+    backdrop-filter: blur(20px) saturate(1.6);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    padding: 28px 16px 20px;
+  }
+
+  .sidebar-section { margin-bottom: 24px; margin-top: 0; }
+
+  .sidebar-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    padding: 0 4px;
+  }
+
+  .sidebar-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 10px;
+    margin-bottom: 12px;
+    transition: border-color 0.15s;
+  }
+
+  .sidebar-search:hover { border-color: var(--border-hover); }
+  .sidebar-search svg { width: 13px; height: 13px; color: var(--text-muted); flex-shrink: 0; }
+  .sidebar-search span { font-size: 12px; color: var(--text-muted); }
+
+  .sidebar-category { margin-bottom: 16px; }
+
+  .sidebar-cat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+    height: 24px;
+    margin-bottom: 4px;
+    cursor: pointer;
+  }
+
+  .sidebar-cat-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .sidebar-cat-toggle {
+    font-size: 10px;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+    display: inline-block;
+  }
+
+  .sidebar-category.collapsed .sidebar-cat-toggle {
+    transform: rotate(-90deg);
+  }
+
+  .sidebar-category.collapsed .sidebar-tags {
+    display: none;
+  }
+
+  .sidebar-tags {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .sidebar-tag {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.1s;
+  }
+
+  .sidebar-tag:hover { background: rgba(255,255,255,0.05); }
+  .sidebar-tag.checked { background: rgba(0,112,243,0.12); }
+
+  /* Custom checkbox */
+  .tag-cb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.12s;
+    position: relative;
+  }
+
+  .tag-cb:checked {
+    background: #0070F3;
+    border-color: #0070F3;
+  }
+
+  .tag-cb:checked::after {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 1px;
+    width: 6px;
+    height: 4px;
+    border-left: 1.5px solid #fff;
+    border-bottom: 1.5px solid #fff;
+    transform: rotate(-45deg);
+  }
+
+  .tag-cb:hover:not(:checked) {
+    border-color: rgba(255,255,255,0.4);
+  }
+
+  .active-filters {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(248, 81, 73, 0.15);
+    border: 1px solid rgba(248, 81, 73, 0.25);
+    border-radius: 20px;
+    padding: 3px 8px 3px 10px;
+  }
+
+  .active-filters.hidden { display: none; }
+
+  .af-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: #F85149;
+  }
+
+  .af-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #F85149;
+  }
+
+  .af-reset {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #F85149;
+    padding: 0;
+    opacity: 0.8;
+    transition: opacity 0.12s;
+    margin-left: 2px;
+  }
+
+  .af-reset:hover { opacity: 1; }
+  .af-reset svg { width: 12px; height: 12px; }
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    color: #58A6FF;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: opacity 0.12s;
+  }
+
+  .sidebar-reset:hover { opacity: 0.7; }
+  .sidebar-reset.hidden { display: none; }
+
+  .sidebar-tag-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+    flex: 1;
+    text-align: left;
+  }
+
+  .sidebar-tag-count {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* Feed desktop */
+  .d-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 28px 32px 48px;
+  }
+
+  .d-feed-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .feed-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    margin: 4px 0 12px;
+  }
+
+  .feed-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .bc-item {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.12s;
+  }
+
+  .bc-item:hover { color: var(--text-secondary); }
+
+  .bc-sep {
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+  }
+
+  .bc-sep svg { width: 12px; height: 12px; }
+
+  .bc-current {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .feed-results {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .feed-results span {
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+
+  /* ── SHARED POST CARD ── */
+  .post-card {
+    background: rgba(22, 27, 34, 0.80);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 20px 24px 16px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .post-card:hover {
+    border-color: rgba(255,255,255,0.16);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .card-time {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .card-summary {
+    font-size: 14px;
+    line-height: 1.68;
+    color: var(--text);
+    margin-bottom: 14px;
+  }
+
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 14px;
+  }
+
+  .tag {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--tag-text);
+    background: var(--tag-bg);
+    border-radius: 6px;
+    padding: 3px 9px;
+    text-decoration: none;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .tag:hover { background: var(--tag-hover-bg); color: var(--tag-hover-text); }
+
+  .card-footer {
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+
+  .sources-toggle {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.12s;
+  }
+
+  .sources-toggle:hover { color: var(--text-secondary); }
+  .sources-toggle svg { width: 13px; height: 13px; transition: transform 0.2s; }
+  .sources-toggle.open svg { transform: rotate(180deg); }
+
+  .sources-panel {
+    margin-top: 12px;
+    background: var(--source-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .source-row {
+    display: grid;
+    grid-template-columns: 44px 104px 1fr;
+    align-items: center;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .source-row:last-child { border-bottom: none; }
+
+  .source-score {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 20px;
+    width: fit-content;
+  }
+
+  .score-green { color: var(--green); background: var(--green-bg); }
+  .score-amber { color: var(--amber); background: var(--amber-bg); }
+  .score-red   { color: var(--red);   background: var(--red-bg); }
+
+  .source-username {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 0 12px 0 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.12s;
+  }
+
+  .source-username:hover { color: var(--text); }
+
+  .source-excerpt {
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Load more */
+  .load-more {
+    text-align: center;
+    padding: 8px 0 16px;
+  }
+
+  .load-more button {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 20px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .load-more button:hover { border-color: var(--border-hover); color: var(--text); }
+
+  /* Mobile bottom nav */
+  .m-bottom-nav {
+    position: sticky;
+    bottom: 0;
+    background: rgba(13, 17, 23, 0.90);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.07);
+    display: flex;
+    padding: 8px 0 12px;
+  }
+
+  .m-bnav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--text-muted);
+    transition: color 0.12s;
+  }
+
+  .m-bnav-item.active { color: var(--text); }
+  .m-bnav-item svg { width: 20px; height: 20px; }
+  .m-bnav-item span { font-size: 10px; font-weight: 500; }
+
+  /* Time switcher */
+  .time-switcher {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .ts-btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.4);
+    background: none;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+
+  .ts-btn:hover { color: rgba(255,255,255,0.7); }
+
+  .ts-btn.active {
+    background: #0070F3;
+    color: #ffffff;
+    box-shadow: 0 1px 4px rgba(0,112,243,0.4);
+  }
+
+  /* Mobile time switcher */
+  .m-time-switcher {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 3px;
+    margin: 0 16px 0 auto;
+  }
+
+  .m-ts-btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.4);
+    background: none;
+    border: none;
+    border-radius: 5px;
+    padding: 3px 8px;
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+
+  .m-ts-btn:hover { color: rgba(255,255,255,0.7); }
+
+  .m-ts-btn.active {
+    background: #0070F3;
+    color: #ffffff;
+    box-shadow: 0 1px 4px rgba(0,112,243,0.4);
+  }
+
+  .sources-panel.hidden { display: none; }
+
+  /* ── FOOTER ── */
+  .site-footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .footer-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .footer-logo {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .footer-logo span { color: var(--text-muted); font-weight: 400; }
+
+  .footer-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    max-width: 260px;
+  }
+
+  .footer-links {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .footer-link {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.12s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .footer-link:hover { color: var(--text); }
+  .footer-link svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  .footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .footer-btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 14px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.15s, color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .footer-btn:hover { border-color: var(--border-hover); color: var(--text); }
+
+  .footer-btn svg { width: 13px; height: 13px; }
+
+  .footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .footer-copy {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .footer-socials {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .footer-social {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: border-color 0.12s, color 0.12s;
+  }
+
+  .footer-social:hover { border-color: var(--border-hover); color: var(--text-secondary); }
+  .footer-social svg { width: 14px; height: 14px; }
+
+  /* Desktop footer: clears fixed nav (72px) */
+  .d-footer {
+    margin: 0;
+    padding-left: 88px;
+    padding-right: 24px;
+  }
+
+  /* Mobile footer */
+  .m-footer { padding: 24px 16px 20px; }
+  .m-footer .footer-top { flex-direction: column; gap: 16px; }
+  .m-footer .footer-actions { flex-wrap: wrap; }
+
+  /* Mobile feed top block */
+  .m-feed-top {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 0 4px;
+  }
+
+  .m-feed-top .feed-title {
+    font-size: 18px;
+    margin: 2px 0 4px;
+  }
+
+  .m-feed-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+  }
+
+  .m-feed-bar .m-time-switcher {
+    margin: 0;
+  }
+
+  .m-feed-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Mobile filter icon button */
+  .m-filter-icon {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .m-filter-icon:hover { border-color: var(--border-hover); color: var(--text); }
+  .m-filter-icon svg { width: 14px; height: 14px; }
+
+  .m-filter-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 9px;
+    font-weight: 600;
+    color: #fff;
+    background: #0070F3;
+    border-radius: 10px;
+    padding: 0 4px;
+    min-width: 14px;
+    text-align: center;
+    line-height: 14px;
+  }
+
+  .m-filter-badge.hidden { display: none; }
+
+  .m-filter-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .m-filter-overlay.hidden { display: none; }
+
+  .m-filter-chrome {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .m-filter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .m-filter-title {
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .m-filter-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .m-filter-reset {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #F85149;
+    background: rgba(248,81,73,0.12);
+    border: none;
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.12s;
+  }
+
+  .m-filter-reset:hover { background: rgba(248,81,73,0.2); }
+  .m-filter-reset svg { width: 12px; height: 12px; }
+  .m-filter-reset.hidden { display: none; }
+
+  .m-filter-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: border-color 0.12s, color 0.12s;
+  }
+
+  .m-filter-close:hover { border-color: var(--border-hover); color: var(--text); }
+  .m-filter-close svg { width: 14px; height: 14px; }
+
+  .m-filter-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .m-filter-cat-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+
+  .m-filter-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .m-filter-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+  }
+
+  .m-filter-tag:hover { border-color: var(--border-hover); }
+
+  .m-filter-tag:has(.m-tag-cb:checked) {
+    background: rgba(0,112,243,0.15);
+    border-color: rgba(0,112,243,0.3);
+    color: #58A6FF;
+  }
+
+  .m-tag-cb {
+    display: none;
+  }
+
+  .m-ftag-count {
+    font-size: 10px;
+    opacity: 0.4;
+  }
+</style>
+</head>
+<body>
+
+<!-- VIEW TOGGLE -->
+<div class="view-toggle">
+  <button onclick="showView('mobile')" id="btn-mobile" class="active">📱 Mobile</button>
+  <button onclick="showView('desktop')" id="btn-desktop">🖥 Desktop</button>
+</div>
+
+<!-- ═══════════════════════════════════════
+     MOBILE VIEW
+═══════════════════════════════════════ -->
+<div class="layout visible" id="mobile">
+  <div id="mobile-frame">
+
+    <!-- Header -->
+    <header class="m-header">
+      <div class="logo">Aff<span>Critic</span></div>
+      <div class="m-header-actions">
+        <div class="icon-btn">
+          <svg viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 10.5L13 13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </div>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Змінити тему">
+          <svg class="icon-moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13.9 8.6a6 6 0 01-6.5-6.5A6 6 0 108 14a6 6 0 005.9-5.4z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Feed header -->
+    <div class="m-feed-top">
+      <!-- 1. Breadcrumbs -->
+      <nav class="breadcrumbs" style="padding: 0 16px;">
+        <a href="#" class="bc-item">AffCritic</a>
+        <span class="bc-sep">
+          <svg viewBox="0 0 12 12" fill="none"><path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="bc-item bc-current">Всі новини</span>
+      </nav>
+
+      <!-- 2. H1 -->
+      <h1 class="feed-title" style="padding: 0 16px;">AffCritic AI Summary Feed</h1>
+
+      <!-- 3. Count left + switcher right -->
+      <div class="m-feed-bar">
+        <span class="feed-results">Знайдено постів: <span id="mBcCount">3</span></span>
+        <div class="m-feed-bar-right">
+          <div class="m-time-switcher">
+            <button class="m-ts-btn active" onclick="setTime(this)">1h</button>
+            <button class="m-ts-btn" onclick="setTime(this)">1d</button>
+            <button class="m-ts-btn" onclick="setTime(this)">1w</button>
+            <button class="m-ts-btn" onclick="setTime(this)">1m</button>
+          </div>
+          <button class="m-filter-icon" onclick="toggleMobileFilters()">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 2h13l-5 6.5V13l-3 1.5V8.5L1.5 2z"/></svg>
+            <span class="m-filter-badge hidden" id="mFilterBadge">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter fullscreen overlay -->
+      <div class="m-filter-overlay hidden" id="mFilterPanel">
+        <div class="m-filter-chrome">
+          <div class="m-filter-header">
+            <span class="m-filter-title">Фільтри</span>
+            <div class="m-filter-header-right">
+              <button class="m-filter-reset hidden" id="mFilterReset" onclick="resetMobileFilters()">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l12 12M14 2L2 14"/></svg>
+                Скинути
+              </button>
+              <button class="m-filter-close" onclick="toggleMobileFilters()">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="m-filter-body">
+
+            <div class="m-filter-cat"><div class="m-filter-cat-name">ГЕО</div><div class="m-filter-tags">
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Россия</span><span class="m-ftag-count">9</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>США</span><span class="m-ftag-count">7</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Индия</span><span class="m-ftag-count">5</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Эстония</span><span class="m-ftag-count">4</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Германия</span><span class="m-ftag-count">3</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Мальта</span><span class="m-ftag-count">3</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Казахстан</span><span class="m-ftag-count">2</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Литва</span><span class="m-ftag-count">2</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Канада</span><span class="m-ftag-count">2</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Албания</span><span class="m-ftag-count">2</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Узбекистан</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Филиппины</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Бразилия</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Украина</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Макао</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Кипр</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Кот-д'Ивуар</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Таиланд</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Шотландия</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Кюрасао</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Австралия</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>ОАЭ</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Гибралтар</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Боливия</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Нидерланды</span><span class="m-ftag-count">1</span></label>
+            </div></div>
+
+            <div class="m-filter-cat"><div class="m-filter-cat-name">Компания</div><div class="m-filter-tags">
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Kalshi</span><span class="m-ftag-count">5</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Polymarket</span><span class="m-ftag-count">3</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>TOPsport</span><span class="m-ftag-count">2</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>FEG</span><span class="m-ftag-count">2</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Allwyn</span><span class="m-ftag-count">2</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>DraftKings</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>01.tech</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Partnerkin</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Evoke plc</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Bally's Corporation</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>AdHunt</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>GipsyTeam</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>1spin4win</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Betr Holdings</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Hantix</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Godlike Partners</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>IndexEmpire</span><span class="m-ftag-count">1</span></label>
+            </div></div>
+
+            <div class="m-filter-cat"><div class="m-filter-cat-name">Оператор</div><div class="m-filter-tags">
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>BetCity</span><span class="m-ftag-count">4</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>William Hill</span><span class="m-ftag-count">2</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Bet365</span><span class="m-ftag-count">2</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>1win</span><span class="m-ftag-count">2</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Stake</span><span class="m-ftag-count">2</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Novatech Solutions N.V.</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>EVA</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>KUKURUKU</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>VGW</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Novibet</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Touch Casino</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Roobet</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Rainbet</span><span class="m-ftag-count">1</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Tipico</span><span class="m-ftag-count">1</span></label>
+            </div></div>
+
+            <div class="m-filter-cat"><div class="m-filter-cat-name">Регулятор</div><div class="m-filter-tags">
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>MGA</span><span class="m-ftag-count">4</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>KSA</span><span class="m-ftag-count">2</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>AGLC</span><span class="m-ftag-count">2</span></label>
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>ACMA</span><span class="m-ftag-count">1</span></label>
+            </div></div>
+
+            <div class="m-filter-cat"><div class="m-filter-cat-name">Игровой провайдер</div><div class="m-filter-tags">
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>BGaming</span><span class="m-ftag-count">2</span></label>
+            </div></div>
+
+            <div class="m-filter-cat"><div class="m-filter-cat-name">Слот</div><div class="m-filter-tags">
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>Jewel Boom</span><span class="m-ftag-count">1</span></label>
+            </div></div>
+
+            <div class="m-filter-cat"><div class="m-filter-cat-name">Стример</div><div class="m-filter-tags">
+              <label class="m-filter-tag"><input type="checkbox" class="m-tag-cb" onchange="updateMobileFilters()"><span>xQc</span><span class="m-ftag-count">1</span></label>
+            </div></div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feed -->
+    <main class="m-feed">
+
+      <article class="post-card">
+        <div class="card-header">
+          <span class="card-time">2 години тому</span>
+        </div>
+        <p class="card-summary">Betsson Group оголосив про вихід на нігерійський ринок через придбання місцевого оператора. Угода оцінюється в $45 млн та включає ліцензію NLRC. Компанія планує запустити локалізований продукт у Q3 2026 з фокусом на мобільний сегмент.</p>
+        <div class="card-tags">
+          <a href="#" class="tag">Betsson</a>
+          <a href="#" class="tag">Nigeria</a>
+          <a href="#" class="tag">M&A</a>
+          <a href="#" class="tag">Ліцензування</a>
+        </div>
+        <div class="card-footer">
+          <button class="sources-toggle" onclick="toggleSources(this)">Source <svg viewBox="0 0 14 14" fill="none"><path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+        <div class="sources-panel hidden">
+          <div class="source-row">
+            <span class="source-score score-green">0.81</span>
+            <a href="#" class="source-username" rel="nofollow noopener noreferrer">@affiliateinsider</a>
+            <span class="source-excerpt">Betsson Group оголосив про вихід на нігерійський ринок через придбання місцевого оператора за $45 млн.</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card">
+        <div class="card-header">
+          <span class="card-time">5 годин тому</span>
+        </div>
+        <p class="card-summary">Google оновив політику щодо реклами азартних ігор у ЄС — тепер оператори зобов'язані верифікувати вік користувачів перед показом оголошень. Зміни набувають чинності з 1 травня 2026.</p>
+        <div class="card-tags">
+          <a href="#" class="tag">Google</a>
+          <a href="#" class="tag">EU</a>
+          <a href="#" class="tag">Реклама</a>
+          <a href="#" class="tag">Регуляція</a>
+        </div>
+        <div class="card-footer">
+          <button class="sources-toggle" onclick="toggleSources(this)">Source +2 <svg viewBox="0 0 14 14" fill="none"><path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+        <div class="sources-panel hidden">
+          <div class="source-row">
+            <span class="source-score score-amber">0.68</span>
+            <a href="#" class="source-username" rel="nofollow noopener noreferrer">@igamingnews</a>
+            <span class="source-excerpt">Google змінює правила — верифікація віку є обов'язковою для gambling-оголошень на платформах ЄС.</span>
+          </div>
+          <div class="source-row">
+            <span class="source-score score-amber">0.71</span>
+            <a href="#" class="source-username" rel="nofollow noopener noreferrer">@affiliatepro</a>
+            <span class="source-excerpt">Нові вимоги Google щодо вікової верифікації для gambling ads набудуть чинності з травня.</span>
+          </div>
+          <div class="source-row">
+            <span class="source-score score-green">0.77</span>
+            <a href="#" class="source-username" rel="nofollow noopener noreferrer">@seoigaming</a>
+            <span class="source-excerpt">Google оновив advertising policy для iGaming у ЄС — age verification стає обов'язковою умовою.</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card">
+        <div class="card-header">
+          <span class="card-time">8 годин тому</span>
+        </div>
+        <p class="card-summary">Affiliate World конференція у Барселоні зібрала понад 8 000 учасників. Ключові теми: AI в медіабаїнгу, cookieless-трекінг та новий Push-формат від PropellerAds. Наступна подія — Bangkok, вересень 2026.</p>
+        <div class="card-tags">
+          <a href="#" class="tag">Affiliate World</a>
+          <a href="#" class="tag">PropellerAds</a>
+          <a href="#" class="tag">Spain</a>
+        </div>
+        <div class="card-footer">
+          <button class="sources-toggle" onclick="toggleSources(this)">Source <svg viewBox="0 0 14 14" fill="none"><path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+        <div class="sources-panel hidden">
+          <div class="source-row">
+            <span class="source-score score-red">0.54</span>
+            <a href="#" class="source-username" rel="nofollow noopener noreferrer">@casinobiz</a>
+            <span class="source-excerpt">Affiliate World Barcelona зібрав 8 000+ учасників. AI в медіабаїнгу, cookieless-трекінг, PropellerAds.</span>
+          </div>
+        </div>
+      </article>
+
+      <div class="load-more">
+        <button>Показати ще</button>
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer m-footer">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <div class="footer-logo">Aff<span>Critic</span></div>
+          <p class="footer-desc">Агрегатор новин affiliate та iGaming індустрії з Telegram-каналів.</p>
+        </div>
+        <div class="footer-actions">
+          <a href="#" class="footer-btn">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v6M5 8h6"/></svg>
+            Додати канал
+          </a>
+          <a href="#" class="footer-btn">Про нас</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span class="footer-copy">&copy; 2026 AffCritic</span>
+        <div class="footer-socials">
+          <a href="#" class="footer-social" title="Telegram" rel="nofollow noopener noreferrer" target="_blank">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.95 2.68L11.82 13.1c-.16.7-.57.87-1.16.54l-3.2-2.36-1.54 1.49c-.17.17-.32.31-.65.31l.23-3.26 5.94-5.37c.26-.23-.06-.36-.4-.13L4.3 9.54l-3.11-.97c-.68-.21-.69-.68.14-.99l12.16-4.69c.56-.21 1.05.14.87 1 .56-.21 1.05.13.86.99l-.4.8z"/></svg>
+          </a>
+          <a href="#" class="footer-social" title="LinkedIn" rel="nofollow noopener noreferrer" target="_blank">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.27 14H1.6V5.4h2.67V14zM2.93 4.27a1.55 1.55 0 110-3.1 1.55 1.55 0 010 3.1zM14.4 14h-2.67V9.8c0-1-.02-2.28-1.39-2.28-1.39 0-1.6 1.09-1.6 2.21V14H6.07V5.4h2.56v1.17h.04c.36-.68 1.23-1.39 2.53-1.39 2.7 0 3.2 1.78 3.2 4.1V14z"/></svg>
+          </a>
+          <a href="mailto:hello@affcritic.com" class="footer-social" title="Email">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3.5" width="12" height="9" rx="1.5"/><path d="M2 4.5l6 4.5 6-4.5"/></svg>
+          </a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Bottom Nav -->
+    <nav class="m-bottom-nav">
+      <a href="#" class="m-bnav-item active">
+        <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/></svg>
+        <span>Стрічка</span>
+      </a>
+      <a href="#" class="m-bnav-item">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M2 6h16M2 10h16M2 14h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span>Теми</span>
+      </a>
+      <a href="#" class="m-bnav-item">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M4 4h12v8a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" stroke="currentColor" stroke-width="1.4"/><path d="M8 14v2M12 14v2M6 16h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span>Канали</span>
+      </a>
+      <a href="#" class="m-bnav-item">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M10 2a6 6 0 100 12A6 6 0 0010 2z" stroke="currentColor" stroke-width="1.4"/><path d="M10 8v4M10 14v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span>Про нас</span>
+      </a>
+    </nav>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     DESKTOP VIEW
+═══════════════════════════════════════ -->
+<div class="layout" id="desktop">
+
+  <!-- Topbar -->
+  <header class="d-topbar">
+    <div class="d-topbar-inner">
+      <div class="d-logo">Aff<span>Critic</span></div>
+      <nav class="d-foldernav"></nav>
+      <div class="d-topbar-right">
+        <div class="d-search">
+          <svg viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M9 9l2.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span>Пошук...</span>
+        </div>
+        <a href="#" class="topbar-btn">Додати канал</a>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Змінити тему">
+          <svg class="icon-moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13.9 8.6a6 6 0 01-6.5-6.5A6 6 0 108 14a6 6 0 005.9-5.4z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Body: Nav + Tags Sidebar + Feed -->
+  <div class="d-body">
+
+    <!-- Left Nav: Slack-style icons -->
+    <nav class="d-nav">
+      <div class="d-nav-inner">
+
+      <a href="#" class="d-nav-item active">
+        <div class="d-nav-icon" style="background:#0070F3;">
+          <svg viewBox="0 0 20 20" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="6" height="6" rx="1.5"/>
+            <rect x="11" y="3" width="6" height="6" rx="1.5"/>
+            <rect x="3" y="11" width="6" height="6" rx="1.5"/>
+            <rect x="11" y="11" width="6" height="6" rx="1.5"/>
+          </svg>
+        </div>
+        <span class="d-nav-label">Стрічка</span>
+      </a>
+
+      <a href="#" class="d-nav-item">
+        <div class="d-nav-icon" style="background:#21262D;">
+          <svg viewBox="0 0 20 20" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 5h14M3 10h14M3 15h8"/>
+          </svg>
+        </div>
+        <span class="d-nav-label">Теми</span>
+      </a>
+
+      <a href="#" class="d-nav-item">
+        <div class="d-nav-icon" style="background:#21262D;">
+          <svg viewBox="0 0 20 20" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="14" height="10" rx="2"/>
+            <path d="M7 13v3M13 13v3M5 16h10"/>
+          </svg>
+        </div>
+        <span class="d-nav-label">Канали</span>
+      </a>
+
+      <a href="#" class="d-nav-item">
+        <div class="d-nav-icon" style="background:#21262D;">
+          <svg viewBox="0 0 20 20" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="10" cy="10" r="8"/>
+            <path d="M10 9v5"/>
+            <circle cx="10" cy="6.5" r="0.5" fill="rgba(255,255,255,0.5)"/>
+          </svg>
+        </div>
+        <span class="d-nav-label">Про нас</span>
+      </a>
+
+      </div>
+    </nav>
+
+    <div class="d-content">
+
+    <!-- Tags Sidebar -->
+    <aside class="d-sidebar">
+      <div class="sidebar-section">
+
+        <div class="sidebar-category">
+          <div class="sidebar-cat-header" onclick="toggleCategory(this)">
+            <span class="sidebar-cat-name">ГЕО</span>
+            <span class="sidebar-cat-toggle">▾</span>
+          </div>
+          <div class="sidebar-tags">
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Россия</span><span class="sidebar-tag-count">9</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">США</span><span class="sidebar-tag-count">7</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Индия</span><span class="sidebar-tag-count">5</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Эстония</span><span class="sidebar-tag-count">4</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Германия</span><span class="sidebar-tag-count">3</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Мальта</span><span class="sidebar-tag-count">3</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Казахстан</span><span class="sidebar-tag-count">2</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Литва</span><span class="sidebar-tag-count">2</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Канада</span><span class="sidebar-tag-count">2</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Албания</span><span class="sidebar-tag-count">2</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Узбекистан</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Филиппины</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Бразилия</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Украина</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Макао</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Кипр</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Кот-д'Ивуар</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Таиланд</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Шотландия</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Кюрасао</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Австралия</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">ОАЭ</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Гибралтар</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Боливия</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Нидерланды</span><span class="sidebar-tag-count">1</span></label>
+          </div>
+        </div>
+
+        <div class="sidebar-category">
+          <div class="sidebar-cat-header" onclick="toggleCategory(this)">
+            <span class="sidebar-cat-name">Компания</span>
+            <span class="sidebar-cat-toggle">▾</span>
+          </div>
+          <div class="sidebar-tags">
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Kalshi</span><span class="sidebar-tag-count">5</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Polymarket</span><span class="sidebar-tag-count">3</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">TOPsport</span><span class="sidebar-tag-count">2</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">FEG</span><span class="sidebar-tag-count">2</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Allwyn</span><span class="sidebar-tag-count">2</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">DraftKings</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">01.tech</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Partnerkin</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Evoke plc</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Bally's Corporation</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">AdHunt</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">GipsyTeam</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">1spin4win</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Betr Holdings</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Hantix</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Godlike Partners</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">IndexEmpire</span><span class="sidebar-tag-count">1</span></label>
+          </div>
+        </div>
+
+        <div class="sidebar-category">
+          <div class="sidebar-cat-header" onclick="toggleCategory(this)">
+            <span class="sidebar-cat-name">Оператор</span>
+            <span class="sidebar-cat-toggle">▾</span>
+          </div>
+          <div class="sidebar-tags">
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">BetCity</span><span class="sidebar-tag-count">4</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">William Hill</span><span class="sidebar-tag-count">2</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Bet365</span><span class="sidebar-tag-count">2</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">1win</span><span class="sidebar-tag-count">2</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Stake</span><span class="sidebar-tag-count">2</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Novatech Solutions N.V.</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">EVA</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">KUKURUKU</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">VGW</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Novibet</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Touch Casino</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Roobet</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Rainbet</span><span class="sidebar-tag-count">1</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Tipico</span><span class="sidebar-tag-count">1</span></label>
+          </div>
+        </div>
+
+        <div class="sidebar-category">
+          <div class="sidebar-cat-header" onclick="toggleCategory(this)">
+            <span class="sidebar-cat-name">Регулятор</span>
+            <span class="sidebar-cat-toggle">▾</span>
+          </div>
+          <div class="sidebar-tags">
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">MGA</span><span class="sidebar-tag-count">4</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">KSA</span><span class="sidebar-tag-count">2</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">AGLC</span><span class="sidebar-tag-count">2</span></label>
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">ACMA</span><span class="sidebar-tag-count">1</span></label>
+          </div>
+        </div>
+
+        <div class="sidebar-category">
+          <div class="sidebar-cat-header" onclick="toggleCategory(this)">
+            <span class="sidebar-cat-name">Игровой провайдер</span>
+            <span class="sidebar-cat-toggle">▾</span>
+          </div>
+          <div class="sidebar-tags">
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">BGaming</span><span class="sidebar-tag-count">2</span></label>
+          </div>
+        </div>
+
+        <div class="sidebar-category">
+          <div class="sidebar-cat-header" onclick="toggleCategory(this)">
+            <span class="sidebar-cat-name">Слот</span>
+            <span class="sidebar-cat-toggle">▾</span>
+          </div>
+          <div class="sidebar-tags">
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">Jewel Boom</span><span class="sidebar-tag-count">1</span></label>
+          </div>
+        </div>
+
+        <div class="sidebar-category">
+          <div class="sidebar-cat-header" onclick="toggleCategory(this)">
+            <span class="sidebar-cat-name">Стример</span>
+            <span class="sidebar-cat-toggle">▾</span>
+          </div>
+          <div class="sidebar-tags">
+            <label class="sidebar-tag"><input type="checkbox" class="tag-cb" onchange="filterTags()"><span class="sidebar-tag-name">xQc</span><span class="sidebar-tag-count">1</span></label>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- Feed -->
+    <main class="d-feed">
+      <!-- 1. Breadcrumbs -->
+      <nav class="breadcrumbs">
+        <a href="#" class="bc-item">AffCritic</a>
+        <span class="bc-sep">
+          <svg viewBox="0 0 12 12" fill="none"><path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="bc-item bc-current">Всі новини</span>
+      </nav>
+
+      <!-- 2. H1 -->
+      <h1 class="feed-title">AffCritic AI Summary Feed</h1>
+
+      <!-- 3. Count + filters left, switcher right -->
+      <div class="d-feed-header">
+        <div class="feed-meta">
+          <span class="feed-results">Знайдено постів: <span id="bcCount"></span></span>
+          <div class="active-filters hidden" id="activeFilters">
+            <span class="af-count" id="afCount">0</span>
+            <span class="af-label">фільтри</span>
+            <button class="af-reset" onclick="resetTags()" title="Скинути фільтри">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3h10l-1 9H4L3 3z"/>
+                <path d="M1 3h14"/>
+                <path d="M6 3V2h4v1"/>
+                <path d="M6 7v4M10 7v4"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="time-switcher">
+          <button class="ts-btn active" onclick="setTime(this)">1h</button>
+          <button class="ts-btn" onclick="setTime(this)">1d</button>
+          <button class="ts-btn" onclick="setTime(this)">1w</button>
+          <button class="ts-btn" onclick="setTime(this)">1m</button>
+        </div>
+      </div>
+
+      <article class="post-card">
+        <div class="card-header">
+          <span class="card-time">2 години тому</span>
+        </div>
+        <p class="card-summary">Betsson Group оголосив про вихід на нігерійський ринок через придбання місцевого оператора. Угода оцінюється в $45 млн та включає ліцензію NLRC. Компанія планує запустити локалізований продукт у Q3 2026 з фокусом на мобільний сегмент.</p>
+        <div class="card-tags">
+          <a href="#" class="tag">Betsson</a>
+          <a href="#" class="tag">Nigeria</a>
+          <a href="#" class="tag">M&A</a>
+          <a href="#" class="tag">Ліцензування</a>
+        </div>
+        <div class="card-footer">
+          <button class="sources-toggle" onclick="toggleSources(this)">Source <svg viewBox="0 0 14 14" fill="none"><path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+        <div class="sources-panel hidden">
+          <div class="source-row">
+            <span class="source-score score-green">0.81</span>
+            <a href="#" class="source-username" rel="nofollow noopener noreferrer">@affiliateinsider</a>
+            <span class="source-excerpt">Betsson Group оголосив про вихід на нігерійський ринок через придбання місцевого оператора за $45 млн.</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card">
+        <div class="card-header">
+          <span class="card-time">5 годин тому</span>
+        </div>
+        <p class="card-summary">Google оновив політику щодо реклами азартних ігор у ЄС — тепер оператори зобов'язані верифікувати вік користувачів перед показом оголошень. Зміни набувають чинності з 1 травня 2026. Це прямо вплине на CPC-стратегії affiliate-партнерів у Великобританії, Німеччині та Нідерландах.</p>
+        <div class="card-tags">
+          <a href="#" class="tag">Google</a>
+          <a href="#" class="tag">EU</a>
+          <a href="#" class="tag">Реклама</a>
+          <a href="#" class="tag">Регуляція</a>
+        </div>
+        <div class="card-footer">
+          <button class="sources-toggle" onclick="toggleSources(this)">Source +2 <svg viewBox="0 0 14 14" fill="none"><path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+        <div class="sources-panel hidden">
+          <div class="source-row">
+            <span class="source-score score-amber">0.68</span>
+            <a href="#" class="source-username" rel="nofollow noopener noreferrer">@igamingnews</a>
+            <span class="source-excerpt">Google змінює правила — верифікація віку є обов'язковою для gambling-оголошень на платформах ЄС.</span>
+          </div>
+          <div class="source-row">
+            <span class="source-score score-amber">0.71</span>
+            <a href="#" class="source-username" rel="nofollow noopener noreferrer">@affiliatepro</a>
+            <span class="source-excerpt">Нові вимоги Google щодо вікової верифікації для gambling ads набудуть чинності з травня.</span>
+          </div>
+          <div class="source-row">
+            <span class="source-score score-green">0.77</span>
+            <a href="#" class="source-username" rel="nofollow noopener noreferrer">@seoigaming</a>
+            <span class="source-excerpt">Google оновив advertising policy для iGaming у ЄС — age verification стає обов'язковою умовою.</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="post-card">
+        <div class="card-header">
+          <span class="card-time">8 годин тому</span>
+        </div>
+        <p class="card-summary">Affiliate World конференція у Барселоні зібрала понад 8 000 учасників. Ключові теми: AI в медіабаїнгу, cookieless-трекінг та новий Push-формат від PropellerAds. Наступна подія — Bangkok, вересень 2026.</p>
+        <div class="card-tags">
+          <a href="#" class="tag">Affiliate World</a>
+          <a href="#" class="tag">PropellerAds</a>
+          <a href="#" class="tag">Spain</a>
+        </div>
+        <div class="card-footer">
+          <button class="sources-toggle" onclick="toggleSources(this)">Source <svg viewBox="0 0 14 14" fill="none"><path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+        <div class="sources-panel hidden">
+          <div class="source-row">
+            <span class="source-score score-red">0.54</span>
+            <a href="#" class="source-username" rel="nofollow noopener noreferrer">@casinobiz</a>
+            <span class="source-excerpt">Affiliate World Barcelona зібрав 8 000+ учасників. AI в медіабаїнгу, cookieless-трекінг, PropellerAds.</span>
+          </div>
+        </div>
+      </article>
+
+      <div class="load-more">
+        <button>Показати ще</button>
+      </div>
+
+    </main>
+
+    </div><!-- /.d-content -->
+
+  </div><!-- /.d-body -->
+
+  <!-- Footer -->
+  <footer class="site-footer d-footer">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo">Aff<span>Critic</span></div>
+        <p class="footer-desc">Агрегатор новин affiliate та iGaming індустрії з Telegram-каналів.</p>
+      </div>
+      <div class="footer-actions">
+        <a href="#" class="footer-btn">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v6M5 8h6"/></svg>
+          Додати канал
+        </a>
+        <a href="#" class="footer-btn">Про нас</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-copy">&copy; 2026 AffCritic</span>
+      <div class="footer-socials">
+        <a href="#" class="footer-social" title="Telegram" rel="nofollow noopener noreferrer" target="_blank">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.95 2.68L11.82 13.1c-.16.7-.57.87-1.16.54l-3.2-2.36-1.54 1.49c-.17.17-.32.31-.65.31l.23-3.26 5.94-5.37c.26-.23-.06-.36-.4-.13L4.3 9.54l-3.11-.97c-.68-.21-.69-.68.14-.99l12.16-4.69c.56-.21 1.05.14.87 1 .56-.21 1.05.13.86.99l-.4.8z"/></svg>
+        </a>
+        <a href="#" class="footer-social" title="LinkedIn" rel="nofollow noopener noreferrer" target="_blank">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.27 14H1.6V5.4h2.67V14zM2.93 4.27a1.55 1.55 0 110-3.1 1.55 1.55 0 010 3.1zM14.4 14h-2.67V9.8c0-1-.02-2.28-1.39-2.28-1.39 0-1.6 1.09-1.6 2.21V14H6.07V5.4h2.56v1.17h.04c.36-.68 1.23-1.39 2.53-1.39 2.7 0 3.2 1.78 3.2 4.1V14z"/></svg>
+        </a>
+        <a href="mailto:hello@affcritic.com" class="footer-social" title="Email">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3.5" width="12" height="9" rx="1.5"/><path d="M2 4.5l6 4.5 6-4.5"/></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  function toggleTheme() {
+    document.body.classList.toggle('light');
+  }
+
+  function toggleMobileFilters() {
+    const panel = document.getElementById('mFilterPanel');
+    panel.classList.toggle('hidden');
+  }
+
+  function updateMobileFilters() {
+    const checked = document.querySelectorAll('#mobile .m-tag-cb:checked');
+    const count = checked.length;
+    const badge = document.getElementById('mFilterBadge');
+    const reset = document.getElementById('mFilterReset');
+    badge.textContent = count;
+    badge.classList.toggle('hidden', count === 0);
+    reset.classList.toggle('hidden', count === 0);
+  }
+
+  function resetMobileFilters() {
+    document.querySelectorAll('#mobile .m-tag-cb').forEach(cb => cb.checked = false);
+    updateMobileFilters();
+  }
+
+  function toggleCategory(header) {
+    header.closest('.sidebar-category').classList.toggle('collapsed');
+  }
+
+  function updatePostCount() {
+    const bcCount = document.getElementById('bcCount');
+    if (bcCount) {
+      const posts = document.querySelectorAll('#desktop .d-feed .post-card');
+      bcCount.textContent = posts.length;
+    }
+  }
+
+  function filterTags() {
+    const checked = document.querySelectorAll('#desktop .tag-cb:checked');
+    document.querySelectorAll('#desktop .sidebar-tag').forEach(label => {
+      const cb = label.querySelector('.tag-cb');
+      label.classList.toggle('checked', cb && cb.checked);
+    });
+    const count = checked.length;
+    const afBlock = document.getElementById('activeFilters');
+    const afCount = document.getElementById('afCount');
+    const afLabel = document.querySelector('#activeFilters .af-label');
+    if (afBlock) afBlock.classList.toggle('hidden', count === 0);
+    if (afCount) afCount.textContent = count;
+    if (afLabel) afLabel.textContent = count === 1 ? 'фільтр' : 'фільтри';
+  }
+
+  function resetTags() {
+    document.querySelectorAll('#desktop .tag-cb').forEach(cb => cb.checked = false);
+    document.querySelectorAll('#desktop .sidebar-tag').forEach(l => l.classList.remove('checked'));
+    const afBlock = document.getElementById('activeFilters');
+    if (afBlock) afBlock.classList.add('hidden');
+  }
+
+  updatePostCount();
+
+  function setTime(btn) {
+    const switcher = btn.closest('.time-switcher, .m-time-switcher');
+    switcher.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function showView(view) {
+    document.querySelectorAll('.layout').forEach(el => el.classList.remove('visible'));
+    document.querySelectorAll('.view-toggle button').forEach(el => el.classList.remove('active'));
+    document.getElementById(view).classList.add('visible');
+    document.getElementById('btn-' + view).classList.add('active');
+  }
+
+  function toggleSources(btn) {
+    const panel = btn.closest('.post-card').querySelector('.sources-panel');
+    const isHidden = panel.classList.contains('hidden');
+    panel.classList.toggle('hidden', !isHidden);
+    btn.classList.toggle('open', isHidden);
+  }
+</script>
+</body>
+</html>

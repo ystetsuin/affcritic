@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 import { TagChip } from "./TagChip";
 import { PostSources } from "./PostSources";
 import { useAdmin } from "./AdminContext";
@@ -46,39 +45,29 @@ function formatRelativeTime(dateStr: string): string {
   const diffHr = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHr / 24);
 
-  if (diffMin < 1) return "just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHr < 24) return `${diffHr}h ago`;
-  if (diffDay < 7) return `${diffDay}d ago`;
+  if (diffMin < 1) return "щойно";
+  if (diffMin < 60) return `${diffMin} хв тому`;
+  if (diffHr < 24) return `${diffHr} год тому`;
+  if (diffDay < 7) return `${diffDay} дн тому`;
 
-  return new Date(dateStr).toLocaleDateString("ru-RU", {
+  return formatAbsoluteDate(dateStr);
+}
+
+function formatAbsoluteDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("uk-UA", {
     day: "numeric",
     month: "short",
   });
 }
 
-function ScoreBadge({ score, label }: { score: number; label: string }) {
-  let color: string;
-  let bg: string;
+function RelativeTime({ date }: { date: string }) {
+  const [text, setText] = useState(() => formatAbsoluteDate(date));
 
-  if (label === "quality") {
-    if (score >= 0.75) { color = "text-emerald-700"; bg = "bg-emerald-50"; }
-    else if (score >= 0.60) { color = "text-amber-700"; bg = "bg-amber-50"; }
-    else { color = "text-red-700"; bg = "bg-red-50"; }
-  } else {
-    if (score >= 0.83) { color = "text-emerald-700"; bg = "bg-emerald-50"; }
-    else if (score >= 0.70) { color = "text-amber-700"; bg = "bg-amber-50"; }
-    else { color = "text-red-700"; bg = "bg-red-50"; }
-  }
+  useEffect(() => {
+    setText(formatRelativeTime(date));
+  }, [date]);
 
-  return (
-    <span
-      className={`inline-flex items-center rounded-sm px-1.5 py-0.5 font-mono text-[10px] leading-tight ${color} ${bg}`}
-      title={`${label}: ${score.toFixed(4)}`}
-    >
-      {score.toFixed(2)}
-    </span>
-  );
+  return <>{text}</>;
 }
 
 export function PostCard({ post, onUpdate, onDelete, selected, onToggleSelect, onSplit }: {
@@ -91,11 +80,8 @@ export function PostCard({ post, onUpdate, onDelete, selected, onToggleSelect, o
 }) {
   const isAdmin = useAdmin();
   const [editingSummary, setEditingSummary] = useState(false);
-  const [editingTags, setEditingTags] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [currentPost, setCurrentPost] = useState(post);
-
-  const firstSource = currentPost.postSources[0];
 
   const handleSummaryUpdate = (newSummary: string) => {
     const updated = { ...currentPost, summary: newSummary };
@@ -128,69 +114,52 @@ export function PostCard({ post, onUpdate, onDelete, selected, onToggleSelect, o
   };
 
   return (
-    <article className={`border-b border-border py-5 first:pt-0 last:border-b-0 ${selected ? "bg-blue-50/50" : ""}`}>
-      {/* Header */}
-      <div className="mb-2.5 flex items-center gap-2 text-xs">
-        {isAdmin && onToggleSelect && (
-          <input
-            type="checkbox"
-            checked={selected ?? false}
-            onChange={onToggleSelect}
-            className="shrink-0"
-          />
-        )}
-        {firstSource && (
-          <a
-            href={firstSource.tgUrl ?? "#"}
-            target="_blank"
-            rel="nofollow noopener noreferrer"
-            className="font-medium text-foreground/70 transition-colors hover:text-foreground"
-          >
-            @{firstSource.channel.username}
-          </a>
-        )}
+    <article className={`post-card${selected ? " selected" : ""}`}>
+      {/* 1. Header */}
+      <div className="card-header">
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {isAdmin && onToggleSelect && (
+            <input
+              type="checkbox"
+              className="merge-cb"
+              checked={selected ?? false}
+              onChange={onToggleSelect}
+            />
+          )}
+          <span className="card-time"><RelativeTime date={currentPost.createdAt} /></span>
+        </div>
 
-        <span className="text-muted-foreground/50">·</span>
-        <time dateTime={currentPost.createdAt} className="text-muted-foreground">
-          {formatRelativeTime(currentPost.createdAt)}
-        </time>
-
-        {currentPost.summaryScore != null && (
-          <>
-            <span className="text-muted-foreground/50">·</span>
-            <ScoreBadge score={currentPost.summaryScore} label="quality" />
-          </>
-        )}
-
-        {/* Admin controls */}
         {isAdmin && (
-          <>
-            <span className="text-muted-foreground/50">·</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <button
+              className="admin-btn"
               onClick={() => setEditingSummary(!editingSummary)}
-              className="text-muted-foreground transition-colors hover:text-foreground"
+              title={editingSummary ? "Скасувати" : "Редагувати summary"}
             >
-              {editingSummary ? "×" : "ред."}
+              {editingSummary ? (
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+              ) : (
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z" /></svg>
+              )}
             </button>
             <button
-              onClick={() => setEditingTags(!editingTags)}
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {editingTags ? "×" : "теги"}
-            </button>
-            <button
+              className="admin-btn danger"
               onClick={handleDelete}
               disabled={deleting}
-              className="text-destructive/60 transition-colors hover:text-destructive"
               title="Видалити пост"
+              style={deleting ? { opacity: 0.5 } : undefined}
             >
-              {deleting ? "..." : "×"}
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 3h10l-1 9H4L3 3z" />
+                <path d="M1 3h14" />
+                <path d="M6 3V2h4v1" />
+              </svg>
             </button>
-          </>
+          </div>
         )}
       </div>
 
-      {/* Summary */}
+      {/* 2. Summary */}
       {editingSummary ? (
         <PostInlineEdit
           postId={currentPost.id}
@@ -200,42 +169,40 @@ export function PostCard({ post, onUpdate, onDelete, selected, onToggleSelect, o
         />
       ) : (
         currentPost.summary && (
-          <p className="text-[0.9375rem] leading-relaxed text-foreground">
-            {currentPost.summary}
-          </p>
+          <p className="card-summary">{currentPost.summary}</p>
         )
       )}
 
-      {/* Extra sources */}
+      {/* 3. Tags — admin: always editable; public: read-only chips */}
+      {isAdmin ? (
+        <div className="card-tags">
+          <PostTagEditor
+            postId={currentPost.id}
+            currentTags={currentPost.postTags}
+            onUpdate={handleTagsUpdate}
+          />
+        </div>
+      ) : (
+        currentPost.postTags.length > 0 && (
+          <div className="card-tags">
+            {currentPost.postTags.map((pt) => (
+              <TagChip
+                key={pt.tag.slug}
+                name={pt.tag.name}
+                slug={pt.tag.slug}
+              />
+            ))}
+          </div>
+        )
+      )}
+
+      {/* 4. Sources */}
       <PostSources
         sources={currentPost.postSources}
         postId={currentPost.id}
+        score={currentPost.summaryScore}
         onSplit={isAdmin ? onSplit : undefined}
       />
-
-      {/* Tags */}
-      {(currentPost.postTags.length > 0 || editingTags) && (
-        <div className="mt-3">
-          {editingTags ? (
-            <PostTagEditor
-              postId={currentPost.id}
-              currentTags={currentPost.postTags}
-              onUpdate={handleTagsUpdate}
-            />
-          ) : (
-            <div className="flex flex-wrap gap-1.5">
-              {currentPost.postTags.map((pt) => (
-                <TagChip
-                  key={pt.tag.slug}
-                  name={pt.tag.name}
-                  slug={pt.tag.slug}
-                  categoryName={pt.tag.category.name}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </article>
   );
 }

@@ -195,7 +195,7 @@ export default function AdminChannelsPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleToggleActive(ch)}
-                      className={`rounded-sm px-2 py-0.5 text-xs font-medium ${ch.isActive ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}
+                      className={`rounded-sm px-2 py-0.5 text-xs font-medium ${ch.isActive ? "bg-emerald-500/20 text-emerald-400 light:bg-emerald-50 light:text-emerald-700" : "bg-red-500/20 text-red-400 light:bg-red-50 light:text-red-700"}`}
                     >
                       {ch.isActive ? "Active" : "Inactive"}
                     </button>

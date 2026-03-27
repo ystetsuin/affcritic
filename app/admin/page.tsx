@@ -35,12 +35,12 @@ interface LogEntry {
 }
 
 const LOG_TYPE_COLORS: Record<string, string> = {
-  scraper: "bg-blue-50 text-blue-700",
-  embedding: "bg-violet-50 text-violet-700",
-  grouping: "bg-amber-50 text-amber-700",
-  gpt: "bg-emerald-50 text-emerald-700",
-  quality: "bg-cyan-50 text-cyan-700",
-  admin: "bg-red-50 text-red-700",
+  scraper: "bg-blue-500/20 text-blue-400 light:bg-blue-50 light:text-blue-700",
+  embedding: "bg-violet-500/20 text-violet-400 light:bg-violet-50 light:text-violet-700",
+  grouping: "bg-amber-500/20 text-amber-400 light:bg-amber-50 light:text-amber-700",
+  gpt: "bg-emerald-500/20 text-emerald-400 light:bg-emerald-50 light:text-emerald-700",
+  quality: "bg-cyan-500/20 text-cyan-400 light:bg-cyan-50 light:text-cyan-700",
+  admin: "bg-red-500/20 text-red-400 light:bg-red-50 light:text-red-700",
 };
 
 const METRIC_LINKS: Record<string, string> = {
@@ -145,7 +145,7 @@ export default function AdminDashboard() {
           <MetricCard label="Канали" value={`${stats.channels.active} / ${stats.channels.total}`} sub="active / total" href={METRIC_LINKS["Канали"]} />
           <MetricCard label="Категорії каналів" value={String(stats.channelCategories)} href={METRIC_LINKS["Категорії каналів"]} />
           <MetricCard label="Пости" value={`${stats.posts.total - stats.posts.deleted}`} sub={`${stats.posts.deleted} deleted`} href={METRIC_LINKS["Пости"]} />
-          <MetricCard label="Raw Posts" value={`${stats.rawPosts.unprocessed}`} sub={`unprocessed / ${stats.rawPosts.processed + stats.rawPosts.unprocessed} total`} href={METRIC_LINKS["Raw Posts"]} subColor={stats.rawPosts.unprocessed > 0 ? "text-red-600" : "text-emerald-600"} />
+          <MetricCard label="Raw Posts" value={`${stats.rawPosts.unprocessed}`} sub={`unprocessed / ${stats.rawPosts.processed + stats.rawPosts.unprocessed} total`} href={METRIC_LINKS["Raw Posts"]} subColor={stats.rawPosts.unprocessed > 0 ? "text-red-400 light:text-red-600" : "text-emerald-400 light:text-emerald-600"} />
           <MetricCard
             label="Теги"
             value={String(stats.tags.active)}
@@ -187,11 +187,11 @@ export default function AdminDashboard() {
           </div>
           <span className="text-xs">
             {scraperRunning ? (
-              <span className="inline-flex items-center gap-1 text-amber-600"><Spinner /> Виконується...</span>
+              <span className="inline-flex items-center gap-1 text-amber-400 light:text-amber-600"><Spinner /> Виконується...</span>
             ) : scraperError ? (
-              <span className="text-red-600">Помилка · {scraperError}</span>
+              <span className="text-red-400 light:text-red-600">Помилка · {scraperError}</span>
             ) : scraperResult ? (
-              <span className="text-emerald-600">
+              <span className="text-emerald-400 light:text-emerald-600">
                 Успішно · {scraperResult.postsNew} new, {scraperResult.postsSkipped} skipped ({scraperResult.durationSeconds}с)
               </span>
             ) : (
@@ -203,7 +203,7 @@ export default function AdminDashboard() {
           <span className="text-xs font-medium text-muted-foreground">Pipeline</span>
           <div className="inline-flex items-center gap-2">
             {stats && (
-              <span className={`text-xs ${stats.rawPosts.unprocessed > 0 ? "text-red-600" : "text-emerald-600"}`}>
+              <span className={`text-xs ${stats.rawPosts.unprocessed > 0 ? "text-red-400 light:text-red-600" : "text-emerald-400 light:text-emerald-600"}`}>
                 {stats.rawPosts.unprocessed} unprocessed
               </span>
             )}
@@ -211,11 +211,11 @@ export default function AdminDashboard() {
           </div>
           <span className="text-xs">
             {pipelineRunning ? (
-              <span className="inline-flex items-center gap-1 text-amber-600"><Spinner /> Виконується...</span>
+              <span className="inline-flex items-center gap-1 text-amber-400 light:text-amber-600"><Spinner /> Виконується...</span>
             ) : pipelineResult?.errors?.length ? (
-              <span className="text-red-600">Помилка · {pipelineResult.errors[0]}</span>
+              <span className="text-red-400 light:text-red-600">Помилка · {pipelineResult.errors[0]}</span>
             ) : pipelineResult ? (
-              <span className="text-emerald-600">Успішно · {pipelineResult.durationSeconds}с</span>
+              <span className="text-emerald-400 light:text-emerald-600">Успішно · {pipelineResult.durationSeconds}с</span>
             ) : (
               <span className="text-muted-foreground">Не запускався</span>
             )}
@@ -305,7 +305,7 @@ function MetricCard({ label, value, sub, highlight, href, subColor }: {
   href?: string;
   subColor?: string;
 }) {
-  const subClass = subColor ?? (highlight ? "text-amber-600 font-medium" : "text-muted-foreground");
+  const subClass = subColor ?? (highlight ? "text-amber-400 light:text-amber-600 font-medium" : "text-muted-foreground");
   const content = (
     <>
       <div className="text-xs text-muted-foreground">{label}</div>

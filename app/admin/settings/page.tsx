@@ -130,7 +130,7 @@ export default function AdminSettingsPage() {
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "..." : "Зберегти"}
           </Button>
-          {saveOk && <span className="text-sm text-emerald-600">Збережено</span>}
+          {saveOk && <span className="text-sm text-emerald-400 light:text-emerald-600">Збережено</span>}
         </div>
         {saveError && <p className="mt-2 text-sm text-destructive">{saveError}</p>}
 

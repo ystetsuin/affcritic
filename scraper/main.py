@@ -34,7 +34,17 @@ from telethon.tl.types import MessageMediaPhoto, MessageMediaDocument
 env_path = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(env_path)
 
-DATABASE_URL = os.environ["DATABASE_URL"]
+_raw_url = os.environ["DATABASE_URL"]
+# Point libpq to certifi CA bundle for SSL verification (Neon requires verify-full)
+try:
+    import certifi
+    _ca_path = certifi.where()
+except ImportError:
+    _ca_path = None
+if _ca_path and "sslrootcert" not in _raw_url:
+    sep = "&" if "?" in _raw_url else "?"
+    _raw_url = f"{_raw_url}{sep}sslrootcert={_ca_path}"
+DATABASE_URL = _raw_url
 TG_API_ID = int(os.environ["TG_API_ID"])
 TG_API_HASH = os.environ["TG_API_HASH"]
 TG_SESSION_NAME = os.environ.get("TG_SESSION_NAME", "affcritic")

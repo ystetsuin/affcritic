@@ -57,7 +57,7 @@ export async function ChannelCategoriesSidebarServer() {
 export async function DesktopSidebar() {
   const { desktop } = await SidebarServer();
   return (
-    <aside className="hidden w-64 shrink-0 lg:block">
+    <aside className="d-sidebar hidden lg:block">
       {desktop}
     </aside>
   );

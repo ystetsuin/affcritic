@@ -141,9 +141,9 @@ export default function AdminPostsPage() {
 
   const scoreColor = (s: number | null) => {
     if (s == null) return "text-muted-foreground";
-    if (s >= 0.75) return "text-emerald-700 bg-emerald-50";
-    if (s >= 0.60) return "text-amber-700 bg-amber-50";
-    return "text-red-700 bg-red-50";
+    if (s >= 0.75) return "text-emerald-400 bg-emerald-500/20 light:text-emerald-700 light:bg-emerald-50";
+    if (s >= 0.60) return "text-amber-400 bg-amber-500/20 light:text-amber-700 light:bg-amber-50";
+    return "text-red-400 bg-red-500/20 light:text-red-700 light:bg-red-50";
   };
 
   const totalPages = Math.ceil(total / 20);
@@ -187,7 +187,7 @@ export default function AdminPostsPage() {
           {filtered.map((post) => (
             <div
               key={post.id}
-              className={`rounded-lg border ${post.isDeleted ? "border-red-200 bg-red-50/30 opacity-60" : "border-border"}`}
+              className={`rounded-lg border ${post.isDeleted ? "border-red-500/30 bg-red-500/10 light:border-red-200 light:bg-red-50/30 opacity-60" : "border-border"}`}
             >
               {/* Post row */}
               <div className="flex items-start gap-3 px-4 py-3">
@@ -238,9 +238,9 @@ export default function AdminPostsPage() {
                       </span>
                     )}
                     <span>{new Date(post.createdAt).toLocaleDateString("uk-UA")}</span>
-                    {post.isManuallyEdited && <span className="rounded bg-blue-50 px-1.5 py-0.5 text-blue-700">edited</span>}
-                    {post.isManuallyGrouped && <span className="rounded bg-purple-50 px-1.5 py-0.5 text-purple-700">grouped</span>}
-                    {post.isDeleted && <span className="rounded bg-red-50 px-1.5 py-0.5 text-red-700">deleted</span>}
+                    {post.isManuallyEdited && <span className="rounded bg-blue-500/20 px-1.5 py-0.5 text-blue-400 light:bg-blue-50 light:text-blue-700">edited</span>}
+                    {post.isManuallyGrouped && <span className="rounded bg-purple-500/20 px-1.5 py-0.5 text-purple-400 light:bg-purple-50 light:text-purple-700">grouped</span>}
+                    {post.isDeleted && <span className="rounded bg-red-500/20 px-1.5 py-0.5 text-red-400 light:bg-red-50 light:text-red-700">deleted</span>}
                   </div>
                 </div>
 

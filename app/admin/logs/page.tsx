@@ -14,12 +14,12 @@ interface LogEntry {
 const LOG_TYPES = ["all", "scraper", "embedding", "grouping", "gpt", "quality", "admin"] as const;
 
 const TYPE_COLORS: Record<string, string> = {
-  scraper: "bg-blue-50 text-blue-700",
-  embedding: "bg-violet-50 text-violet-700",
-  grouping: "bg-amber-50 text-amber-700",
-  gpt: "bg-emerald-50 text-emerald-700",
-  quality: "bg-cyan-50 text-cyan-700",
-  admin: "bg-red-50 text-red-700",
+  scraper: "bg-blue-500/20 text-blue-400 light:bg-blue-50 light:text-blue-700",
+  embedding: "bg-violet-500/20 text-violet-400 light:bg-violet-50 light:text-violet-700",
+  grouping: "bg-amber-500/20 text-amber-400 light:bg-amber-50 light:text-amber-700",
+  gpt: "bg-emerald-500/20 text-emerald-400 light:bg-emerald-50 light:text-emerald-700",
+  quality: "bg-cyan-500/20 text-cyan-400 light:bg-cyan-50 light:text-cyan-700",
+  admin: "bg-red-500/20 text-red-400 light:bg-red-50 light:text-red-700",
 };
 
 export default function AdminLogsPage() {
