@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { PostCard } from "./PostCard";
 import type { PostData } from "./PostCard";
 import { useAdmin } from "./AdminContext";
@@ -28,6 +28,7 @@ export function FeedClient({
   const isAdmin = useAdmin();
   const { selectedSlugs } = useTagFilter();
   const [posts, setPosts] = useState<PostData[]>(initialPosts);
+  const [totalCount, setTotalCount] = useState(total);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -36,10 +37,11 @@ export function FeedClient({
   useEffect(() => {
     if (prevPeriod.current !== period) {
       setPosts(initialPosts);
+      setTotalCount(total);
       setPage(1);
       prevPeriod.current = period;
     }
-  }, [period, initialPosts]);
+  }, [period, initialPosts, total]);
 
   // Merge state
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -48,17 +50,7 @@ export function FeedClient({
   // Split state
   const [splitting, setSplitting] = useState<string | null>(null);
 
-  const hasMore = posts.length < total;
-
-  // Client-side tag filtering
-  const filteredPosts = useMemo(() => {
-    if (selectedSlugs.length === 0) return posts;
-    return posts.filter((post) =>
-      post.postTags?.some((pt: { tag: { slug: string } }) =>
-        selectedSlugs.includes(pt.tag.slug)
-      )
-    );
-  }, [posts, selectedSlugs]);
+  const hasMore = posts.length < totalCount;
 
   const buildParams = useCallback((extra?: Record<string, string>) => {
     const params = new URLSearchParams(extra);
@@ -66,8 +58,38 @@ export function FeedClient({
     if (channel) params.set("channel", channel);
     if (tag) params.set("tag", tag);
     if (period && period !== "all") params.set("period", period);
+    if (selectedSlugs.length > 0) params.set("tags", selectedSlugs.join(","));
     return params;
-  }, [folder, channel, tag, period]);
+  }, [folder, channel, tag, period, selectedSlugs]);
+
+  // Reload from server when sidebar tag filter changes
+  const prevSlugsRef = useRef(selectedSlugs.join(","));
+  useEffect(() => {
+    const key = selectedSlugs.join(",");
+    if (prevSlugsRef.current === key) return;
+    prevSlugsRef.current = key;
+
+    let cancelled = false;
+    const reload = async () => {
+      setLoading(true);
+      const params = buildParams({ page: "1", limit: String(pageSize) });
+      try {
+        const res = await fetch(`/api/posts?${params}`);
+        const data = await res.json();
+        if (!cancelled) {
+          setPosts(data.posts);
+          setTotalCount(data.pagination.total);
+          setPage(1);
+        }
+      } catch (err) {
+        console.error("Failed to filter posts:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    reload();
+    return () => { cancelled = true; };
+  }, [selectedSlugs, buildParams, pageSize]);
 
   const loadMore = useCallback(async () => {
     setLoading(true);
@@ -183,14 +205,14 @@ export function FeedClient({
       )}
 
       {/* No results for active filter */}
-      {selectedSlugs.length > 0 && filteredPosts.length === 0 && (
+      {selectedSlugs.length > 0 && posts.length === 0 && !loading && (
         <div style={{ textAlign: "center", padding: "48px 0", color: "var(--text-muted)", fontSize: 13 }}>
           Немає постів з обраними тегами
         </div>
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {filteredPosts.map((post) => (
+        {posts.map((post) => (
           <PostCard
             key={post.id}
             post={post}

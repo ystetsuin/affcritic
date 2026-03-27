@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
   const folder = searchParams.get("folder");
   const channel = searchParams.get("channel");
   const tag = searchParams.get("tag");
+  const tags = searchParams.get("tags"); // comma-separated slugs for multi-tag filter
   const period = parsePeriod(searchParams.get("period"));
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10) || 20));
@@ -54,6 +55,19 @@ export async function GET(request: NextRequest) {
         },
       },
     });
+  }
+
+  if (tags) {
+    const slugList = tags.split(",").map((s) => s.trim()).filter(Boolean);
+    if (slugList.length > 0) {
+      andConditions.push({
+        postTags: {
+          some: {
+            tag: { slug: { in: slugList }, status: "active" },
+          },
+        },
+      });
+    }
   }
 
   const where: Prisma.PostWhereInput = { AND: andConditions };
