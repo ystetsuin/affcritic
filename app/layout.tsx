@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import "./globals.css";
-import { LeftNav } from "@/components/LeftNav";
 import { BottomNav } from "@/components/BottomNav";
 import { Topbar } from "@/components/Topbar";
 import { MobileHeader } from "@/components/MobileHeader";
@@ -24,8 +23,12 @@ export default function RootLayout({
     <html lang="ru" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        {/* Critical CSS — prevents FOUC before Tailwind loads */}
+        <style dangerouslySetInnerHTML={{ __html: `.hidden{display:none!important}@media(min-width:64rem){.lg\\:hidden{display:none!important}.lg\\:block{display:block!important}.lg\\:grid{display:grid!important}}` }} />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
@@ -41,13 +44,8 @@ export default function RootLayout({
             <MobileHeader />
           </div>
 
-          {/* d-body: Nav + d-content */}
+          {/* d-body: content wrapper */}
           <div className="d-body">
-            {/* Desktop: Left Nav (72px spacer + fixed inner) */}
-            <div className="hidden lg:block">
-              <LeftNav />
-            </div>
-
             {/* d-content: sidebar + feed (grid set per-page) */}
             <div className="d-content">
               <Suspense>

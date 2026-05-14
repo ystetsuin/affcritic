@@ -1,7 +1,6 @@
 import OpenAI from "openai";
 import { prisma } from "./db";
 import { logPipeline } from "./logger";
-import { cosineSimilarity } from "./dedup";
 import { buildPrompt, toPromptTags } from "./prompts";
 import type { TagListEntry } from "./prompts";
 
@@ -36,30 +35,15 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 }
 
 /**
- * Convert a number[] to a Buffer (float32 little-endian).
+ * Convert a number[] embedding to pgvector text format: '[0.1,0.2,...]'
  */
-export function embeddingToBuffer(embedding: number[]): Buffer {
-  const buf = Buffer.alloc(embedding.length * 4);
-  for (let i = 0; i < embedding.length; i++) {
-    buf.writeFloatLE(embedding[i], i * 4);
-  }
-  return buf;
-}
-
-/**
- * Convert a Buffer (float32 little-endian) back to number[].
- */
-export function bufferToEmbedding(buf: Buffer): number[] {
-  const result: number[] = [];
-  for (let i = 0; i < buf.length; i += 4) {
-    result.push(buf.readFloatLE(i));
-  }
-  return result;
+export function embeddingToVectorString(embedding: number[]): string {
+  return `[${embedding.join(",")}]`;
 }
 
 /**
  * Process all raw_posts that have text but no embedding yet.
- * Fetches in batches, generates embeddings, and saves them.
+ * Uses raw SQL for embedding column (pgvector type not supported by Prisma ORM).
  */
 export async function processUnembeddedPosts(): Promise<{
   processed: number;
@@ -72,14 +56,12 @@ export async function processUnembeddedPosts(): Promise<{
   let tokensUsed = 0;
 
   while (true) {
-    const posts = await prisma.rawPost.findMany({
-      where: {
-        embedding: null,
-        processed: false,
-      },
-      select: { id: true, text: true },
-      take: BATCH_SIZE,
-    });
+    // Find posts without embeddings via raw SQL (embedding is Unsupported in Prisma)
+    const posts = await prisma.$queryRaw<{ id: string; text: string | null }[]>`
+      SELECT id, text FROM raw_posts
+      WHERE embedding IS NULL AND processed = false
+      LIMIT ${BATCH_SIZE}
+    `;
 
     if (posts.length === 0) break;
 
@@ -102,12 +84,13 @@ export async function processUnembeddedPosts(): Promise<{
         const embedding = response.data[0].embedding;
         tokensUsed += response.usage?.total_tokens ?? 0;
 
-        const buf = embeddingToBuffer(embedding);
+        const vectorStr = embeddingToVectorString(embedding);
 
-        await prisma.rawPost.update({
-          where: { id: post.id },
-          data: { embedding: new Uint8Array(buf) },
-        });
+        // Write embedding via raw SQL (pgvector type)
+        await prisma.$executeRaw`
+          UPDATE raw_posts SET embedding = ${vectorStr}::vector
+          WHERE id = ${post.id}::uuid
+        `;
 
         stats.processed++;
       } catch (err) {
@@ -343,6 +326,7 @@ export async function generateSummaryForGroup(
 /**
  * Check summary quality by comparing embedding of summary
  * against average embedding of source raw_posts.
+ * Uses pgvector: AVG(embedding) and cosine distance computed in SQL.
  * Saves result to posts.summary_score.
  * Returns the score or null if check was skipped.
  */
@@ -357,37 +341,30 @@ export async function checkSummaryQuality(groupId: string): Promise<number | nul
     return null;
   }
 
-  // Get source raw_posts embeddings
-  const rawPosts = await prisma.rawPost.findMany({
-    where: { postId: groupId, embedding: { not: null } },
-    select: { embedding: true },
-  });
+  // Check if source embeddings exist
+  const countResult = await prisma.$queryRaw<{ cnt: bigint }[]>`
+    SELECT COUNT(*) AS cnt FROM raw_posts
+    WHERE post_id = ${groupId}::uuid AND embedding IS NOT NULL
+  `;
+  const sourceCount = Number(countResult[0]?.cnt ?? 0);
 
-  if (rawPosts.length === 0) {
+  if (sourceCount === 0) {
     console.warn(`[quality] Group ${groupId} has no source embeddings — skipping`);
     return null;
   }
 
-  // Compute average source embedding
-  const sourceEmbeddings = rawPosts.map((rp) =>
-    bufferToEmbedding(Buffer.from(rp.embedding!)),
-  );
-  const dim = sourceEmbeddings[0].length;
-  const avgEmbedding = new Array<number>(dim).fill(0);
-  for (const emb of sourceEmbeddings) {
-    for (let i = 0; i < dim; i++) {
-      avgEmbedding[i] += emb[i];
-    }
-  }
-  for (let i = 0; i < dim; i++) {
-    avgEmbedding[i] /= sourceEmbeddings.length;
-  }
-
-  // Generate embedding for summary
+  // Generate embedding for summary (this stays in Node.js — it's a new embedding)
   const summaryEmbedding = await generateEmbedding(post.summary);
+  const summaryVectorStr = embeddingToVectorString(summaryEmbedding);
 
-  // Compute score
-  const score = cosineSimilarity(summaryEmbedding, avgEmbedding);
+  // Compute cosine similarity between summary embedding and AVG of source embeddings — all in SQL
+  const result = await prisma.$queryRaw<{ score: number }[]>`
+    SELECT 1 - (AVG(embedding) <=> ${summaryVectorStr}::vector) AS score
+    FROM raw_posts
+    WHERE post_id = ${groupId}::uuid AND embedding IS NOT NULL
+  `;
+
+  const score = Number(result[0]?.score ?? 0);
 
   // Determine status
   let status: string;
@@ -409,7 +386,7 @@ export async function checkSummaryQuality(groupId: string): Promise<number | nul
     summary_score: parseFloat(score.toFixed(4)),
     status,
     threshold: 0.75,
-    source_count: sourceEmbeddings.length,
+    source_count: sourceCount,
   });
 
   return score;

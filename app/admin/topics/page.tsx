@@ -44,8 +44,12 @@ export default function AdminTopicsPage() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const fetchFolders = useCallback(async () => {
-    const res = await fetch("/api/folders");
-    setFolders(await res.json());
+    try {
+      const res = await fetch("/api/folders");
+      if (res.ok) setFolders(await res.json());
+    } catch (err) {
+      console.error("[admin/topics] fetchFolders error:", err);
+    }
     setLoading(false);
   }, []);
 
@@ -59,7 +63,7 @@ export default function AdminTopicsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: newName.trim(), slug: newSlug.trim() }),
     });
-    if (!res.ok) { setCreateError((await res.json()).error); return; }
+    if (!res.ok) { try { setCreateError((await res.json()).error); } catch { setCreateError("Request failed"); } return; }
     setNewName(""); setNewSlug(""); setShowCreate(false);
     fetchFolders();
   };
@@ -75,7 +79,7 @@ export default function AdminTopicsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: editName.trim(), slug: editSlug.trim() }),
     });
-    if (!res.ok) { setEditError((await res.json()).error); return; }
+    if (!res.ok) { try { setEditError((await res.json()).error); } catch { setEditError("Request failed"); } return; }
     setEditId(null);
     fetchFolders();
   };

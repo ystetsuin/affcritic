@@ -101,13 +101,24 @@ export async function GET(request: NextRequest) {
             },
           },
         },
+        rawPosts: {
+          select: { postedAt: true },
+          where: { postedAt: { not: null } },
+          orderBy: { postedAt: "asc" },
+          take: 1,
+        },
       },
     }),
     prisma.post.count({ where }),
   ]);
 
+  const serializedPosts = posts.map((post) => {
+    const { rawPosts, ...rest } = post as typeof post & { rawPosts: { postedAt: Date | null }[] };
+    return { ...rest, publishedAt: rawPosts?.[0]?.postedAt ?? null };
+  });
+
   return NextResponse.json({
-    posts,
+    posts: serializedPosts,
     pagination: {
       page,
       limit,

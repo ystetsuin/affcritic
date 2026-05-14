@@ -1,5 +1,8 @@
 # dependencies
 node_modules
+
+# generated avatars (from stats_collector)
+public/avatars/
 /.pnp
 .pnp.*
 

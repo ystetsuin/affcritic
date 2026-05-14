@@ -41,6 +41,7 @@ const LOG_TYPE_COLORS: Record<string, string> = {
   gpt: "bg-emerald-500/20 text-emerald-400 light:bg-emerald-50 light:text-emerald-700",
   quality: "bg-cyan-500/20 text-cyan-400 light:bg-cyan-50 light:text-cyan-700",
   admin: "bg-red-500/20 text-red-400 light:bg-red-50 light:text-red-700",
+  stats: "bg-teal-500/20 text-teal-400 light:bg-teal-50 light:text-teal-700",
 };
 
 const METRIC_LINKS: Record<string, string> = {
@@ -67,17 +68,30 @@ export default function AdminDashboard() {
   } | null>(null);
   const [scraperError, setScraperError] = useState("");
 
+  // Stats collector state
+  const [statsCollRunning, setStatsCollRunning] = useState(false);
+  const [statsCollResult, setStatsCollResult] = useState<{
+    channelsProcessed: number; channelsTotal: number; durationSeconds: number;
+  } | null>(null);
+  const [statsCollError, setStatsCollError] = useState("");
+
   // Recent logs
   const [recentLogs, setRecentLogs] = useState<LogEntry[]>([]);
 
   const fetchStats = useCallback(async () => {
-    const [statsRes, logsRes] = await Promise.all([
-      fetch("/api/admin/stats"),
-      fetch("/api/logs?limit=5"),
-    ]);
-    setStats(await statsRes.json());
-    const logsData = await logsRes.json();
-    setRecentLogs(logsData.logs ?? []);
+    try {
+      const [statsRes, logsRes] = await Promise.all([
+        fetch("/api/admin/stats"),
+        fetch("/api/logs?limit=5"),
+      ]);
+      if (statsRes.ok) setStats(await statsRes.json());
+      if (logsRes.ok) {
+        const logsData = await logsRes.json();
+        setRecentLogs(logsData.logs ?? []);
+      }
+    } catch (err) {
+      console.error("[admin] fetchStats error:", err);
+    }
   }, []);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
@@ -114,6 +128,28 @@ export default function AdminDashboard() {
       setScraperError(err instanceof Error ? err.message : "Network error");
     }
     setScraperRunning(false);
+    fetchStats();
+  };
+
+  const handleRunStatsCollector = async () => {
+    setStatsCollRunning(true);
+    setStatsCollResult(null);
+    setStatsCollError("");
+    try {
+      const res = await fetch("/api/stats/run", { method: "POST" });
+      const data = await res.json();
+      if (res.status === 409) {
+        const started = data.startedAt ? new Date(data.startedAt).toLocaleTimeString("uk-UA") : "?";
+        setStatsCollError(`Уже запущено (PID ${data.pid}, з ${started})`);
+      } else if (!res.ok) {
+        setStatsCollError(data.error || "Stats collector failed");
+      } else {
+        setStatsCollResult(data);
+      }
+    } catch (err) {
+      setStatsCollError(err instanceof Error ? err.message : "Network error");
+    }
+    setStatsCollRunning(false);
     fetchStats();
   };
 
@@ -216,6 +252,25 @@ export default function AdminDashboard() {
               <span className="text-red-400 light:text-red-600">Помилка · {pipelineResult.errors[0]}</span>
             ) : pipelineResult ? (
               <span className="text-emerald-400 light:text-emerald-600">Успішно · {pipelineResult.durationSeconds}с</span>
+            ) : (
+              <span className="text-muted-foreground">Не запускався</span>
+            )}
+          </span>
+
+          {/* Stats Collector row */}
+          <span className="text-xs font-medium text-muted-foreground">Статистика</span>
+          <div className="inline-flex items-center gap-2">
+            <ActionButton running={statsCollRunning} disabled={scraperRunning || pipelineRunning} onClick={handleRunStatsCollector} />
+          </div>
+          <span className="text-xs">
+            {statsCollRunning ? (
+              <span className="inline-flex items-center gap-1 text-amber-400 light:text-amber-600"><Spinner /> Збір підписників...</span>
+            ) : statsCollError ? (
+              <span className="text-red-400 light:text-red-600">Помилка · {statsCollError}</span>
+            ) : statsCollResult ? (
+              <span className="text-emerald-400 light:text-emerald-600">
+                Успішно · {statsCollResult.channelsProcessed}/{statsCollResult.channelsTotal} каналів ({statsCollResult.durationSeconds}с)
+              </span>
             ) : (
               <span className="text-muted-foreground">Не запускався</span>
             )}

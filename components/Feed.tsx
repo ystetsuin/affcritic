@@ -19,17 +19,24 @@ export async function Feed({
   const period = parsePeriod(rawPeriod);
   const where = buildWhere({ folder, channel, tag, period });
 
-  const [posts, total] = await Promise.all([
-    prisma.post.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      take: PAGE_SIZE,
-      include: postInclude,
-    }),
-    prisma.post.count({ where }),
-  ]);
+  let serialized: PostData[] = [];
+  let total = 0;
 
-  const serialized = posts.map(serializePost);
+  try {
+    const [posts, count] = await Promise.all([
+      prisma.post.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: PAGE_SIZE,
+        include: postInclude,
+      }),
+      prisma.post.count({ where }),
+    ]);
+    serialized = posts.map(serializePost);
+    total = count;
+  } catch {
+    // DB quota exceeded or connection error — render empty feed
+  }
 
   return (
     <FeedClient
@@ -110,8 +117,17 @@ const postInclude = {
       },
     },
   },
+  rawPosts: {
+    select: { postedAt: true },
+    where: { postedAt: { not: null } },
+    orderBy: { postedAt: "asc" as const },
+    take: 1,
+  },
 } as const;
 
 function serializePost(post: Record<string, unknown>): PostData {
-  return JSON.parse(JSON.stringify(post));
+  const raw = JSON.parse(JSON.stringify(post));
+  const publishedAt = raw.rawPosts?.[0]?.postedAt ?? null;
+  delete raw.rawPosts;
+  return { ...raw, publishedAt };
 }

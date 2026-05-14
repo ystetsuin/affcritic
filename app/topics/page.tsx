@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { prisma } from "@/lib/db";
 import { TopicsPage } from "@/components/TopicsPage";
 import type { Metadata } from "next";
@@ -8,6 +10,14 @@ export const metadata: Metadata = {
 };
 
 export default async function TopicsIndexPage() {
+  try {
+    return await renderTopicsPage();
+  } catch {
+    return <TopicsPage categories={[]} tagGroups={[]} />;
+  }
+}
+
+async function renderTopicsPage() {
   const [channelCategories, tagCategories] = await Promise.all([
     prisma.channelCategory.findMany({
       orderBy: { sortOrder: "asc" },

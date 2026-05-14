@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { prisma } from "@/lib/db";
@@ -14,54 +16,51 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const category = await prisma.channelCategory.findUnique({
-    where: { slug },
-    select: { name: true },
-  });
-  if (!category) return {};
-  return {
-    title: `${category.name} — AffCritic`,
-    description: `Affiliate news from ${category.name} channels`,
-  };
+  try {
+    const { slug } = await params;
+    const category = await prisma.channelCategory.findUnique({
+      where: { slug },
+      select: { name: true },
+    });
+    if (!category) return {};
+    return {
+      title: `${category.name} — AffCritic`,
+      description: `Affiliate news from ${category.name} channels`,
+    };
+  } catch {
+    return {};
+  }
 }
 
 export default async function TopicPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
   const { period } = await searchParams;
-  const category = await prisma.channelCategory.findUnique({
-    where: { slug },
-    select: { name: true, slug: true },
-  });
+  let category;
+  try {
+    category = await prisma.channelCategory.findUnique({
+      where: { slug },
+      select: { name: true, slug: true },
+    });
+  } catch {
+    notFound();
+  }
   if (!category) notFound();
 
   return (
     <TagFilterProvider>
-      <div className="hidden lg:grid" style={{ gridTemplateColumns: "var(--sidebar-w) 1fr" }}>
-        <Suspense>
-          <DesktopSidebar />
-        </Suspense>
-        <main style={{ padding: "28px 32px 48px" }}>
+      <div className="page-layout">
+        <aside>
+          <Suspense>
+            <DesktopSidebar />
+          </Suspense>
+        </aside>
+        <main>
           <Breadcrumbs items={[
             { label: "AffCritic", href: "/" },
             { label: "Тематики", href: "/topics" },
             { label: category.name },
           ]} />
           <h1 className="feed-title">{category.name}</h1>
-          <Suspense>
-            <Feed folder={category.slug} period={period} />
-          </Suspense>
-        </main>
-      </div>
-
-      <div className="lg:hidden">
-        <main style={{ padding: "12px 16px" }}>
-          <Breadcrumbs items={[
-            { label: "AffCritic", href: "/" },
-            { label: "Тематики", href: "/topics" },
-            { label: category.name },
-          ]} />
-          <h1 className="feed-title" style={{ fontSize: 18 }}>{category.name}</h1>
           <Suspense>
             <Feed folder={category.slug} period={period} />
           </Suspense>

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -10,7 +12,10 @@ export const metadata: Metadata = {
 };
 
 export default async function TagsIndexPage() {
-  const tagCategories = await prisma.tagCategory.findMany({
+  let tagGroups: { category: string; tags: { name: string; slug: string; postsCount: number }[] }[] = [];
+
+  try {
+    const tagCategories = await prisma.tagCategory.findMany({
     where: {
       tags: { some: { status: "active", postTags: { some: {} } } },
     },
@@ -27,14 +32,17 @@ export default async function TagsIndexPage() {
     },
   });
 
-  const tagGroups = tagCategories
-    .map((cat) => ({
-      category: cat.name,
-      tags: cat.tags
-        .map((t) => ({ name: t.name, slug: t.slug, postsCount: t._count.postTags }))
-        .sort((a, b) => b.postsCount - a.postsCount),
-    }))
-    .filter((g) => g.tags.length > 0);
+    tagGroups = tagCategories
+      .map((cat) => ({
+        category: cat.name,
+        tags: cat.tags
+          .map((t) => ({ name: t.name, slug: t.slug, postsCount: t._count.postTags }))
+          .sort((a, b) => b.postsCount - a.postsCount),
+      }))
+      .filter((g) => g.tags.length > 0);
+  } catch {
+    // DB quota exceeded — render empty
+  }
 
   return (
     <>

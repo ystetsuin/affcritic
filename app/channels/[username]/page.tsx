@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { prisma } from "@/lib/db";
@@ -6,6 +8,8 @@ import { DesktopSidebar } from "@/components/SidebarServer";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Footer } from "@/components/Footer";
 import { TagFilterProvider } from "@/components/TagFilterContext";
+import { ChannelStatsCard } from "@/components/ChannelStatsCard";
+import { ChannelHero } from "@/components/ChannelHero";
 import type { Metadata } from "next";
 
 interface PageProps {
@@ -14,60 +18,70 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { username } = await params;
-  const channel = await prisma.channel.findUnique({
-    where: { username },
-    select: { username: true, displayName: true },
-  });
-  if (!channel) return {};
-  const name = channel.displayName || `@${channel.username}`;
-  return {
-    title: `${name} — AffCritic`,
-    description: `Posts from ${name}`,
-  };
+  try {
+    const { username } = await params;
+    const channel = await prisma.channel.findUnique({
+      where: { username },
+      select: { username: true, displayName: true },
+    });
+    if (!channel) return {};
+    const name = channel.displayName || `@${channel.username}`;
+    return {
+      title: `${name} — AffCritic`,
+      description: `Posts from ${name}`,
+    };
+  } catch {
+    return {};
+  }
 }
 
 export default async function ChannelPage({ params, searchParams }: PageProps) {
   const { username } = await params;
   const { period } = await searchParams;
-  const channel = await prisma.channel.findUnique({
-    where: { username },
-    select: { username: true, displayName: true },
-  });
+  let channel;
+  try {
+    channel = await prisma.channel.findUnique({
+      where: { username },
+      select: {
+        username: true,
+        displayName: true,
+        avatarUrl: true,
+        description: true,
+        categoryMap: {
+          include: { category: { select: { name: true, slug: true } } },
+        },
+      },
+    });
+  } catch {
+    notFound();
+  }
   if (!channel) notFound();
 
   const displayName = channel.displayName || `@${channel.username}`;
+  const categories = channel.categoryMap.map((m) => m.category);
 
   return (
     <TagFilterProvider>
-      <div className="hidden lg:grid" style={{ gridTemplateColumns: "var(--sidebar-w) 1fr" }}>
-        <Suspense>
-          <DesktopSidebar />
-        </Suspense>
-        <main style={{ padding: "28px 32px 48px" }}>
-          <Breadcrumbs items={[
-            { label: "AffCritic", href: "/" },
-            { label: "Канали", href: "/channels" },
-            { label: displayName },
-          ]} />
-          <h1 className="feed-title">{displayName}</h1>
-          {channel.displayName && (
-            <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 16 }}>@{channel.username}</p>
-          )}
+      <div className="page-layout">
+        <aside>
           <Suspense>
-            <Feed channel={channel.username} period={period} />
+            <DesktopSidebar />
           </Suspense>
-        </main>
-      </div>
-
-      <div className="lg:hidden">
-        <main style={{ padding: "12px 16px" }}>
+        </aside>
+        <main>
           <Breadcrumbs items={[
             { label: "AffCritic", href: "/" },
             { label: "Канали", href: "/channels" },
             { label: displayName },
           ]} />
-          <h1 className="feed-title" style={{ fontSize: 18 }}>{displayName}</h1>
+          <ChannelHero
+            username={channel.username}
+            displayName={channel.displayName}
+            avatarUrl={channel.avatarUrl}
+            description={channel.description}
+            categories={categories}
+          />
+          <ChannelStatsCard username={channel.username} />
           <Suspense>
             <Feed channel={channel.username} period={period} />
           </Suspense>

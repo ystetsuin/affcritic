@@ -11,7 +11,7 @@ interface LogEntry {
   createdAt: string;
 }
 
-const LOG_TYPES = ["all", "scraper", "embedding", "grouping", "gpt", "quality", "admin"] as const;
+const LOG_TYPES = ["all", "scraper", "embedding", "grouping", "gpt", "quality", "admin", "stats"] as const;
 
 const TYPE_COLORS: Record<string, string> = {
   scraper: "bg-blue-500/20 text-blue-400 light:bg-blue-50 light:text-blue-700",
@@ -20,6 +20,7 @@ const TYPE_COLORS: Record<string, string> = {
   gpt: "bg-emerald-500/20 text-emerald-400 light:bg-emerald-50 light:text-emerald-700",
   quality: "bg-cyan-500/20 text-cyan-400 light:bg-cyan-50 light:text-cyan-700",
   admin: "bg-red-500/20 text-red-400 light:bg-red-50 light:text-red-700",
+  stats: "bg-teal-500/20 text-teal-400 light:bg-teal-50 light:text-teal-700",
 };
 
 export default function AdminLogsPage() {
@@ -48,10 +49,16 @@ export default function AdminLogsPage() {
     if (fromDate) params.set("from", fromDate);
     if (toDate) params.set("to", toDate);
 
-    const res = await fetch(`/api/logs?${params}`);
-    const data = await res.json();
-    setLogs(data.logs);
-    setTotal(data.pagination.total);
+    try {
+      const res = await fetch(`/api/logs?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLogs(data.logs);
+        setTotal(data.pagination.total);
+      }
+    } catch (err) {
+      console.error("[admin/logs] fetchLogs error:", err);
+    }
     setLoading(false);
   }, [page, typeFilter, postIdFilter, fromDate, toDate]);
 

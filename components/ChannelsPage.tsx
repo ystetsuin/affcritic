@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Sidebar, SidebarDrawer } from "./Sidebar";
 import { Breadcrumbs } from "./Breadcrumbs";
 import { Footer } from "./Footer";
+import { Sparkline } from "./Sparkline";
 
 interface Category {
   id: string;
@@ -13,59 +15,96 @@ interface Category {
   channelCount: number;
 }
 
-interface ChannelStats {
-  today: number;
-  week: number;
-  month: number;
-  allTime: number;
-}
-
 interface ChannelData {
-  id: string;
   username: string;
   displayName: string | null;
+  avatarUrl: string | null;
+  description: string | null;
   isActive: boolean;
   categories: { id: string; name: string; slug: string }[];
-  stats: ChannelStats;
-  share: ChannelStats;
-}
-
-interface Totals {
-  today: number;
-  week: number;
-  month: number;
-  allTime: number;
+  subscribers: number | null;
+  subscribersDelta7d: number | null;
+  postsInFeed: number;
+  dedupRatio: number;
+  topTags: { name: string; slug: string }[];
+  sparkline: number[];
 }
 
 interface ChannelsPageProps {
   channels: ChannelData[];
   categories: Category[];
-  totals: Totals;
 }
 
-type StatsMode = "count" | "share";
+type SortKey = "subscribers" | "activity" | "uniq";
 
-function formatStat(count: number, share: number, mode: StatsMode) {
-  if (count === 0) return mode === "share" ? "0%" : "0";
-  if (mode === "share") return `${Math.round(share * 100)}%`;
-  return String(count);
+function formatCompact(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+  if (n >= 10_000) return (n / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
+  return n.toLocaleString("uk-UA");
 }
 
-export function ChannelsPage({ channels, categories, totals }: ChannelsPageProps) {
+export function ChannelsPage({ channels, categories }: ChannelsPageProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [statsMode, setStatsMode] = useState<StatsMode>("count");
+  const [sortKey, setSortKey] = useState<SortKey>("subscribers");
 
   const filtered = selectedCategory
     ? channels.filter((ch) => ch.categories.some((c) => c.slug === selectedCategory))
     : channels;
 
-  const sorted = [...filtered].sort((a, b) => b.share.allTime - a.share.allTime);
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortKey === "subscribers") return (b.subscribers ?? -1) - (a.subscribers ?? -1);
+    if (sortKey === "activity") return b.sparkline.reduce((s, v) => s + v, 0) - a.sparkline.reduce((s, v) => s + v, 0);
+    return b.dedupRatio - a.dedupRatio;
+  });
+
+  const content = (
+    <>
+      <Breadcrumbs items={[{ label: "AffCritic", href: "/" }, { label: "Канали" }]} />
+      <div className="ch-catalog-header">
+        <h1 className="feed-title">Канали <span style={{ fontWeight: 400, fontSize: 14, color: "var(--text-muted)" }}>{channels.length}</span></h1>
+        <div className="ch-catalog-controls">
+          <div className="growth-switcher">
+            {([["subscribers", "Підписники"], ["activity", "Активність"], ["uniq", "Унікальність"]] as const).map(([key, label]) => (
+              <button
+                key={key}
+                className={`growth-pill ${sortKey === key ? "active" : ""}`}
+                onClick={() => setSortKey(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="lg:hidden">
+            <SidebarDrawer
+              groups={[]}
+              mode="channels"
+              channelCategories={categories}
+              activeCategorySlug={selectedCategory}
+              onCategorySelect={setSelectedCategory}
+            />
+          </div>
+        </div>
+      </div>
+
+      {sorted.length === 0 ? (
+        <p style={{ textAlign: "center", padding: "32px 0", color: "var(--text-muted)", fontSize: 13 }}>
+          Немає каналів
+        </p>
+      ) : (
+        <div className="ch-card-list">
+          {sorted.map((ch) => (
+            <ChannelCard key={ch.username} channel={ch} />
+          ))}
+        </div>
+      )}
+    </>
+  );
 
   return (
     <>
-      {/* Desktop: sidebar + content */}
-      <div className="hidden lg:grid" style={{ gridTemplateColumns: "var(--sidebar-w) 1fr" }}>
-        <aside className="d-sidebar">
+      <div className="page-layout">
+        <aside>
           <Sidebar
             groups={[]}
             mode="channels"
@@ -74,152 +113,85 @@ export function ChannelsPage({ channels, categories, totals }: ChannelsPageProps
             onCategorySelect={setSelectedCategory}
           />
         </aside>
-
-        <main style={{ padding: "28px 32px 48px" }}>
-          <Breadcrumbs items={[{ label: "AffCritic", href: "/" }, { label: "Канали" }]} />
-          <h1 className="feed-title">Канали</h1>
-
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <span className="feed-results">
-              <span>{channels.length}</span> каналів
-            </span>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                Сьогодні: <b style={{ color: "var(--text-secondary)" }}>{totals.today}</b>
-                {" · "}Тиждень: <b style={{ color: "var(--text-secondary)" }}>{totals.week}</b>
-                {" · "}Місяць: <b style={{ color: "var(--text-secondary)" }}>{totals.month}</b>
-                {" · "}Всього: <b style={{ color: "var(--text-secondary)" }}>{totals.allTime}</b>
-              </span>
-              <div className="time-switcher">
-                {(["count", "share"] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    className={`ts-btn ${statsMode === mode ? "active" : ""}`}
-                    onClick={() => setStatsMode(mode)}
-                  >
-                    {mode === "count" ? "#" : "%"}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <ChannelTable channels={sorted} statsMode={statsMode} />
+        <main>
+          {content}
         </main>
       </div>
-
-      {/* Mobile */}
-      <div className="lg:hidden">
-        <main style={{ padding: "12px 16px" }}>
-          <Breadcrumbs items={[{ label: "AffCritic", href: "/" }, { label: "Канали" }]} />
-          <h1 className="feed-title" style={{ fontSize: 18 }}>Канали</h1>
-
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <span className="feed-results"><span>{channels.length}</span> каналів</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div className="time-switcher">
-                {(["count", "share"] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    className={`ts-btn ${statsMode === mode ? "active" : ""}`}
-                    onClick={() => setStatsMode(mode)}
-                  >
-                    {mode === "count" ? "#" : "%"}
-                  </button>
-                ))}
-              </div>
-              <SidebarDrawer
-                groups={[]}
-                mode="channels"
-                channelCategories={categories}
-                activeCategorySlug={selectedCategory}
-                onCategorySelect={setSelectedCategory}
-              />
-            </div>
-          </div>
-
-          <ChannelTable channels={sorted} statsMode={statsMode} />
-        </main>
-      </div>
-
       <Footer />
     </>
   );
 }
 
-function ChannelTable({ channels, statsMode }: { channels: ChannelData[]; statsMode: StatsMode }) {
-  if (channels.length === 0) {
-    return (
-      <p style={{ textAlign: "center", padding: "32px 0", color: "var(--text-muted)", fontSize: 13 }}>
-        Немає каналів
-      </p>
-    );
-  }
+function ChannelCard({ channel: ch }: { channel: ChannelData }) {
+  const name = ch.displayName || `@${ch.username}`;
+  const initial = (ch.displayName || ch.username).charAt(0).toUpperCase();
+  const uniqPct = Math.round(ch.dedupRatio * 100);
+  const uniqColor = uniqPct >= 70 ? "var(--green)" : uniqPct >= 50 ? "var(--amber)" : "var(--red)";
 
   return (
-    <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ borderBottom: "1px solid var(--border)" }}>
-            <th style={{ textAlign: "left", padding: "8px 12px 8px 0", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)" }}>
-              Канал
-            </th>
-            <th style={{ textAlign: "right", padding: "8px 12px 8px 0", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)" }}>
-              День
-            </th>
-            <th style={{ textAlign: "right", padding: "8px 12px 8px 0", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)" }}>
-              Тиждень
-            </th>
-            <th style={{ textAlign: "right", padding: "8px 12px 8px 0", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)" }}>
-              Місяць
-            </th>
-            <th style={{ textAlign: "right", padding: "8px 0", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)" }}>
-              Всього
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {channels.map((ch) => (
-            <tr key={ch.id} style={{ borderBottom: "1px solid var(--border)" }}>
-              <td style={{ padding: "10px 12px 10px 0" }}>
-                <Link
-                  href={`/channels/${ch.username}/`}
-                  style={{ color: "var(--text)", textDecoration: "none", fontWeight: 500 }}
-                >
-                  @{ch.username}
-                </Link>
-                {ch.displayName && (
-                  <span style={{ marginLeft: 8, fontSize: 11, color: "var(--text-muted)" }}>{ch.displayName}</span>
-                )}
-                {!ch.isActive && (
-                  <span className="score-badge score-red" style={{ marginLeft: 6 }}>off</span>
-                )}
-                {ch.categories.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
-                    {ch.categories.map((c) => (
-                      <span key={c.id} className="tag-chip" style={{ fontSize: 10, padding: "1px 6px" }}>
-                        {c.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </td>
-              <td style={{ textAlign: "right", padding: "10px 12px 10px 0", fontVariantNumeric: "tabular-nums", color: "var(--text-secondary)" }}>
-                {formatStat(ch.stats.today, ch.share.today, statsMode)}
-              </td>
-              <td style={{ textAlign: "right", padding: "10px 12px 10px 0", fontVariantNumeric: "tabular-nums", color: "var(--text-secondary)" }}>
-                {formatStat(ch.stats.week, ch.share.week, statsMode)}
-              </td>
-              <td style={{ textAlign: "right", padding: "10px 12px 10px 0", fontVariantNumeric: "tabular-nums", color: "var(--text-secondary)" }}>
-                {formatStat(ch.stats.month, ch.share.month, statsMode)}
-              </td>
-              <td style={{ textAlign: "right", padding: "10px 0", fontVariantNumeric: "tabular-nums", fontWeight: 500, color: "var(--text)" }}>
-                {formatStat(ch.stats.allTime, ch.share.allTime, statsMode)}
-              </td>
-            </tr>
+    <div className={`ch-card ${!ch.isActive ? "ch-card-inactive" : ""}`}>
+      <Link href={`/channels/${ch.username}/`} className="ch-card-main">
+        {/* Avatar */}
+        {ch.avatarUrl ? (
+          <Image src={ch.avatarUrl} alt={name} width={48} height={48} className="ch-card-avatar" />
+        ) : (
+          <div className="ch-card-avatar ch-card-avatar-ph">{initial}</div>
+        )}
+
+        {/* Name + bio */}
+        <div className="ch-card-info">
+          <div className="ch-card-name">
+            {name}
+            {!ch.isActive && <span className="ch-card-badge-off">Неактивний</span>}
+          </div>
+          {ch.description && <p className="ch-card-bio">{ch.description}</p>}
+        </div>
+
+        {/* Subscribers */}
+        <div className="ch-card-metric ch-card-subs">
+          {ch.subscribers != null ? (
+            <>
+              <span className="ch-card-metric-val">{formatCompact(ch.subscribers)}</span>
+              {ch.subscribersDelta7d != null && ch.subscribersDelta7d !== 0 && (
+                <span className={`ch-card-delta ${ch.subscribersDelta7d > 0 ? "delta-positive" : "delta-negative"}`}>
+                  {ch.subscribersDelta7d > 0 ? "+" : ""}{formatCompact(ch.subscribersDelta7d)}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="ch-card-metric-val" style={{ color: "var(--text-muted)" }}>—</span>
+          )}
+          <span className="ch-card-metric-label">підп.</span>
+        </div>
+
+        {/* Posts in feed */}
+        <div className="ch-card-metric ch-card-posts">
+          <span className="ch-card-metric-val">{ch.postsInFeed}</span>
+          <span className="ch-card-metric-label">постів</span>
+        </div>
+
+        {/* Uniq */}
+        <div className="ch-card-metric ch-card-uniq">
+          <span className="ch-card-metric-val" style={{ color: uniqColor }}>{uniqPct}%</span>
+          <span className="ch-card-metric-label">унік.</span>
+        </div>
+
+        {/* Sparkline */}
+        <div className="ch-card-spark">
+          <Sparkline data={ch.sparkline} width={120} height={32} />
+        </div>
+      </Link>
+
+      {/* Tags — outside Link to allow separate clicks */}
+      {ch.topTags.length > 0 && (
+        <div className="ch-card-tags">
+          {ch.topTags.map((t) => (
+            <Link key={t.slug} href={`/tags/${t.slug}/`} className="tag-chip" style={{ fontSize: 10, padding: "1px 6px" }}>
+              {t.name}
+            </Link>
           ))}
-        </tbody>
-      </table>
+        </div>
+      )}
     </div>
   );
 }

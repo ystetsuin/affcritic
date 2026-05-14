@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/db";
 import type { Prisma } from "../../../generated/prisma/client";
 
-const VALID_TYPES = new Set(["scraper", "embedding", "grouping", "gpt", "quality", "admin"]);
+const VALID_TYPES = new Set(["scraper", "embedding", "grouping", "gpt", "quality", "admin", "stats"]);
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;

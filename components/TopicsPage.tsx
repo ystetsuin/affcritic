@@ -1,5 +1,5 @@
 "use client";
-
+// neon-emerald hub
 import Link from "next/link";
 import { Breadcrumbs } from "./Breadcrumbs";
 import { Footer } from "./Footer";
@@ -27,27 +27,27 @@ interface TopicsPageProps {
 }
 
 export function TopicsPage({ categories, tagGroups }: TopicsPageProps) {
+  const isEmpty = categories.length === 0 && tagGroups.length === 0;
+
   return (
     <>
-      <main style={{ padding: "28px 32px 48px", maxWidth: 960 }}>
+      <main className="topics-page">
         <Breadcrumbs items={[{ label: "AffCritic", href: "/" }, { label: "Тематики" }]} />
         <h1 className="feed-title">Тематики</h1>
-        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 24 }}>Категорії каналів та теги</p>
+        <p className="topics-lede">Категорії каналів та теги</p>
 
-        {/* Channel categories */}
         {categories.length > 0 && (
-          <section style={{ marginBottom: 40 }}>
-            <div className="sidebar-cat-name" style={{ marginBottom: 12 }}>Категорії каналів</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 }}>
+          <section className="topics-section">
+            <h2 className="topics-section-h">Категорії каналів</h2>
+            <div className="topic-tile-grid">
               {categories.map((cat) => (
                 <Link
                   key={cat.slug}
                   href={`/topics/${cat.slug}/`}
-                  className="post-card"
-                  style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}
+                  className="topic-tile"
                 >
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>{cat.name}</span>
-                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                  <span className="topic-tile-name">{cat.name}</span>
+                  <span className="topic-tile-count">
                     {cat.channelCount} {plural(cat.channelCount, "канал", "канали", "каналів")}
                   </span>
                 </Link>
@@ -56,30 +56,26 @@ export function TopicsPage({ categories, tagGroups }: TopicsPageProps) {
           </section>
         )}
 
-        {/* Tags by category */}
         {tagGroups.map((group) => (
-          <section key={group.category} style={{ marginBottom: 32 }}>
-            <div className="sidebar-cat-name" style={{ marginBottom: 12 }}>{group.category}</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 8 }}>
+          <section key={group.category} className="topics-section">
+            <h2 className="topics-section-h">{group.category}</h2>
+            <div className="tag-tile-grid">
               {group.tags.map((tag) => (
                 <Link
                   key={tag.slug}
                   href={`/tags/${tag.slug}/`}
-                  className="post-card"
-                  style={{ padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}
+                  className="tag-tile"
                 >
-                  <span style={{ fontSize: 13, color: "var(--text)" }}>{tag.name}</span>
-                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{tag.postsCount}</span>
+                  <span className="tag-tile-name">{tag.name}</span>
+                  <span className="tag-tile-count">{tag.postsCount}</span>
                 </Link>
               ))}
             </div>
           </section>
         ))}
 
-        {categories.length === 0 && tagGroups.length === 0 && (
-          <p style={{ textAlign: "center", padding: "64px 0", color: "var(--text-muted)" }}>
-            Поки що немає тематик
-          </p>
+        {isEmpty && (
+          <p className="topics-empty">no topics yet</p>
         )}
       </main>
       <Footer />

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Suspense } from "react";
 import { Feed } from "@/components/Feed";
 import { DesktopSidebar, MobileSidebarButton } from "@/components/SidebarServer";
@@ -15,43 +17,29 @@ export default async function Home({ searchParams }: PageProps) {
 
   return (
     <TagFilterProvider>
-      {/* Desktop: Sidebar + Feed grid */}
-      <div className="hidden lg:grid" style={{ gridTemplateColumns: "var(--sidebar-w) 1fr" }}>
-        <Suspense>
-          <DesktopSidebar />
-        </Suspense>
+      <div className="page-layout">
+        <aside>
+          <Suspense>
+            <DesktopSidebar />
+          </Suspense>
+        </aside>
 
-        <main style={{ padding: "28px 32px 48px" }}>
+        <main>
           <Breadcrumbs items={[{ label: "AffCritic", href: "/" }, { label: "Всі новини" }]} />
           <h1 className="feed-title">AffCritic AI Summary Feed</h1>
 
-          <Suspense fallback={<FeedSkeleton />}>
-            <Feed period={period} />
-          </Suspense>
-        </main>
-      </div>
-
-      {/* Mobile: single column */}
-      <div className="lg:hidden">
-        <div style={{ padding: "12px 16px 4px" }}>
-          <Breadcrumbs items={[{ label: "AffCritic", href: "/" }, { label: "Всі новини" }]} />
-          <h1 className="feed-title" style={{ fontSize: 18 }}>AffCritic AI Summary Feed</h1>
-
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
+          <div className="lg:hidden" style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, marginBottom: 8 }}>
             <Suspense>
               <MobileSidebarButton />
             </Suspense>
           </div>
-        </div>
 
-        <main style={{ padding: "12px" }}>
           <Suspense fallback={<FeedSkeleton />}>
             <Feed period={period} />
           </Suspense>
         </main>
       </div>
 
-      {/* Footer */}
       <Footer />
     </TagFilterProvider>
   );

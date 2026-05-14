@@ -33,6 +33,7 @@ export interface PostData {
   summary: string | null;
   summaryScore: number | null;
   createdAt: string;
+  publishedAt: string | null;
   postSources: PostSource[];
   postTags: PostTag[];
 }
@@ -113,7 +114,8 @@ export function PostCard({ post, onUpdate, onDelete, selected, onToggleSelect, o
               onChange={onToggleSelect}
             />
           )}
-          <span className="card-time" suppressHydrationWarning>{formatRelativeTime(currentPost.createdAt)}</span>
+          <span className="card-time" suppressHydrationWarning>{formatRelativeTime(currentPost.publishedAt ?? currentPost.createdAt)}</span>
+          {isAdmin && <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--text-muted)" }}>{currentPost.id.slice(0, 8)}</span>}
         </div>
 
         {isAdmin && (
@@ -160,36 +162,43 @@ export function PostCard({ post, onUpdate, onDelete, selected, onToggleSelect, o
         )
       )}
 
-      {/* 3. Tags — admin: always editable; public: read-only chips */}
-      {isAdmin ? (
-        <div className="card-tags">
-          <PostTagEditor
-            postId={currentPost.id}
-            currentTags={currentPost.postTags}
-            onUpdate={handleTagsUpdate}
-          />
-        </div>
-      ) : (
-        currentPost.postTags.length > 0 && (
-          <div className="card-tags">
-            {currentPost.postTags.map((pt) => (
-              <TagChip
-                key={pt.tag.slug}
-                name={pt.tag.name}
-                slug={pt.tag.slug}
-              />
-            ))}
-          </div>
-        )
-      )}
-
-      {/* 4. Sources */}
+      {/* 3. Tags + Sources */}
       <PostSources
         sources={currentPost.postSources}
         postId={currentPost.id}
         score={currentPost.summaryScore}
         onSplit={isAdmin ? onSplit : undefined}
-      />
+      >
+        {({ toggle, panel }) => (
+          <>
+            <div className="card-bottom">
+              {isAdmin ? (
+                <div className="card-tags">
+                  <PostTagEditor
+                    postId={currentPost.id}
+                    currentTags={currentPost.postTags}
+                    onUpdate={handleTagsUpdate}
+                  />
+                </div>
+              ) : (
+                currentPost.postTags.length > 0 && (
+                  <div className="card-tags">
+                    {currentPost.postTags.map((pt, i) => (
+                      <TagChip
+                        key={`${pt.tag.slug}-${i}`}
+                        name={pt.tag.name}
+                        slug={pt.tag.slug}
+                      />
+                    ))}
+                  </div>
+                )
+              )}
+              {toggle}
+            </div>
+            {panel}
+          </>
+        )}
+      </PostSources>
     </article>
   );
 }

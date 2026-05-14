@@ -21,6 +21,7 @@ enum PipelineLogType {
   gpt
   quality
   admin
+  stats
 }
 
 // ─── Models ──────────────────────────────────────────────
@@ -29,6 +30,8 @@ model Channel {
   id          String   @id @default(uuid()) @db.Uuid
   username    String   @unique
   displayName String?  @map("display_name")
+  avatarUrl   String?  @map("avatar_url")
+  description String?
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
 
@@ -36,8 +39,21 @@ model Channel {
   rawPosts     RawPost[]
   postSources  PostSource[]
   blockedPosts BlockedPost[]
+  statsHistory ChannelStatsHistory[]
 
   @@map("channels")
+}
+
+model ChannelStatsHistory {
+  id          String   @id @default(uuid()) @db.Uuid
+  channelId   String   @map("channel_id") @db.Uuid
+  subscribers Int
+  scrapedAt   DateTime @default(now()) @map("scraped_at")
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([channelId, scrapedAt])
+  @@map("channel_stats_history")
 }
 
 model ChannelCategory {
@@ -110,9 +126,13 @@ model RawPost {
   text      String?
   mediaUrl  String?   @map("media_url")
   postedAt  DateTime? @map("posted_at")
-  embedding Bytes?
+  embedding Unsupported("vector(1536)")?
   postId    String?   @map("post_id") @db.Uuid
   processed Boolean   @default(false)
+  views     Int?
+  forwards  Int?
+  replies   Int?
+  viewsAt   DateTime? @map("views_at")
 
   channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
   post    Post?   @relation(fields: [postId], references: [id], onDelete: SetNull)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
@@ -34,14 +34,19 @@ export default function AdminTagsPage() {
   const [categories, setCategories] = useState<TagCategory[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(new Set());
 
   const fetchData = useCallback(async () => {
-    const [catRes, tagsRes] = await Promise.all([
-      fetch("/api/tag-categories"),
-      fetch("/api/tags"),
-    ]);
-    setCategories(await catRes.json());
-    setTags(await tagsRes.json());
+    try {
+      const [catRes, tagsRes] = await Promise.all([
+        fetch("/api/tag-categories"),
+        fetch("/api/tags"),
+      ]);
+      if (catRes.ok) setCategories(await catRes.json());
+      if (tagsRes.ok) setTags(await tagsRes.json());
+    } catch (err) {
+      console.error("[admin/tags] fetchData error:", err);
+    }
     setLoading(false);
   }, []);
 
@@ -54,10 +59,42 @@ export default function AdminTagsPage() {
     tags: activeTags.filter((t) => t.category.id === cat.id).sort((a, b) => b.postsCount - a.postsCount),
   }));
 
+  const toggleTag = useCallback((id: string) => {
+    setSelectedTagIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleGroup = useCallback((tagIds: string[]) => {
+    setSelectedTagIds((prev) => {
+      const next = new Set(prev);
+      const allSelected = tagIds.every((id) => prev.has(id));
+      if (allSelected) {
+        tagIds.forEach((id) => next.delete(id));
+      } else {
+        tagIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => setSelectedTagIds(new Set()), []);
+
+  // Escape clears selection
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedTagIds.size > 0) clearSelection();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [selectedTagIds.size, clearSelection]);
+
   if (loading) return <div className="mx-auto max-w-4xl px-4 py-6 text-sm text-muted-foreground">Завантаження...</div>;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6 space-y-8">
+    <div className={`mx-auto max-w-4xl px-4 py-6 space-y-8 ${selectedTagIds.size > 0 ? "pb-20" : ""}`}>
       <h1 className="text-xl font-bold">Теги</h1>
 
       {/* Pending section */}
@@ -69,7 +106,233 @@ export default function AdminTagsPage() {
       <CategoriesSection categories={categories} onRefresh={fetchData} />
 
       {/* Active tags by category */}
-      <ActiveTagsSection groups={groupedActive} categories={categories} allTags={activeTags} onRefresh={fetchData} />
+      <ActiveTagsSection
+        groups={groupedActive}
+        categories={categories}
+        allTags={activeTags}
+        onRefresh={fetchData}
+        selectedTagIds={selectedTagIds}
+        onToggleTag={toggleTag}
+        onToggleGroup={toggleGroup}
+        onClearSelection={clearSelection}
+      />
+
+      {/* Bulk toolbar */}
+      {selectedTagIds.size > 0 && (
+        <BulkToolbar
+          selectedTags={activeTags.filter((t) => selectedTagIds.has(t.id))}
+          categories={categories}
+          onMove={async (categoryId) => {
+            const res = await fetch("/api/tags/bulk-move", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ tagIds: Array.from(selectedTagIds), categoryId }),
+            });
+            if (res.ok) { clearSelection(); fetchData(); }
+          }}
+          onMerge={async (targetId) => {
+            const sourceIds = Array.from(selectedTagIds).filter((id) => id !== targetId);
+            const res = await fetch("/api/tags/bulk-merge", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ sourceIds, targetId }),
+            });
+            if (res.ok) { clearSelection(); fetchData(); }
+          }}
+          onDelete={async () => {
+            const res = await fetch("/api/tags/bulk-delete", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ tagIds: Array.from(selectedTagIds) }),
+            });
+            if (res.ok) { clearSelection(); fetchData(); }
+          }}
+          onCancel={clearSelection}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Bulk Move Toolbar ─────────────────────────────────
+
+function BulkToolbar({ selectedTags, categories, onMove, onMerge, onDelete, onCancel }: {
+  selectedTags: Tag[];
+  categories: TagCategory[];
+  onMove: (categoryId: string) => Promise<void>;
+  onMerge: (targetId: string) => Promise<void>;
+  onDelete: () => Promise<void>;
+  onCancel: () => void;
+}) {
+  const count = selectedTags.length;
+  const [targetCatId, setTargetCatId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [showMergeDialog, setShowMergeDialog] = useState(false);
+
+  const targetCatName = categories.find((c) => c.id === targetCatId)?.name;
+
+  const handleMove = async () => {
+    if (!targetCatId) return;
+    if (!confirm(`Перемістити ${count} тегів в категорію "${targetCatName}"?`)) return;
+    setBusy(true);
+    await onMove(targetCatId);
+    setBusy(false);
+    setTargetCatId("");
+  };
+
+  const handleMergeSelect = async (targetId: string) => {
+    const target = selectedTags.find((t) => t.id === targetId);
+    if (!target) return;
+    if (!confirm(`Об'єднати ${count - 1} тегів в "${target.name}"? Всі пости та аліаси будуть перенесені.`)) return;
+    setBusy(true);
+    setShowMergeDialog(false);
+    await onMerge(targetId);
+    setBusy(false);
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(`Видалити ${count} тегів? Всі прив'язки до постів будуть видалені.`)) return;
+    setBusy(true);
+    await onDelete();
+    setBusy(false);
+  };
+
+  return (
+    <>
+      {/* Merge target dialog */}
+      {showMergeDialog && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50" onClick={() => setShowMergeDialog(false)}>
+          <div className="mx-4 w-full max-w-md rounded-lg border border-border bg-background p-4 shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-3 text-sm font-semibold">Оберіть головний тег</h3>
+            <div className="max-h-64 space-y-1 overflow-y-auto">
+              {selectedTags.map((tag) => (
+                <button
+                  key={tag.id}
+                  onClick={() => handleMergeSelect(tag.id)}
+                  className="flex w-full items-center justify-between rounded px-3 py-2 text-left text-sm hover:bg-muted"
+                >
+                  <span className="font-medium">{tag.name}</span>
+                  <span className="text-xs text-muted-foreground">{tag.category.name} · {tag.postsCount} постів</span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 flex justify-end">
+              <Button size="sm" variant="ghost" onClick={() => setShowMergeDialog(false)}>Скасувати</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toolbar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur px-4 py-3">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-3">
+          <span className="text-sm font-medium">{count} тегів вибрано</span>
+
+          {/* Move */}
+          <select
+            value={targetCatId}
+            onChange={(e) => setTargetCatId(e.target.value)}
+            className="h-7 rounded border border-input bg-background px-2 text-sm"
+          >
+            <option value="" disabled>Категорія...</option>
+            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <Button size="sm" onClick={handleMove} disabled={!targetCatId || busy}>
+            Перемістити
+          </Button>
+
+          <span className="text-border">|</span>
+
+          {/* Merge */}
+          <Button size="sm" variant="outline" onClick={() => setShowMergeDialog(true)} disabled={count < 2 || busy}>
+            Об&apos;єднати
+          </Button>
+
+          {/* Delete */}
+          <Button size="sm" variant="destructive" onClick={handleDelete} disabled={busy}>
+            Видалити
+          </Button>
+
+          <Button size="sm" variant="ghost" onClick={onCancel}>Скасувати</Button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Tag Merge Autocomplete ────────────────────────────
+
+function TagMergeAutocomplete({ tags, excludeId, onMerge, onCancel }: {
+  tags: Tag[];
+  excludeId: string;
+  onMerge: (targetId: string) => void;
+  onCancel: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  // Close on click outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) onCancel();
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [onCancel]);
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onCancel]);
+
+  const q = query.trim().toLowerCase();
+  const filtered = useMemo(() => {
+    const candidates = tags.filter((t) => t.id !== excludeId);
+    if (!q) return candidates.slice(0, 8);
+    return candidates
+      .filter((t) =>
+        t.name.toLowerCase().includes(q) ||
+        t.aliases.some((a) => a.alias.toLowerCase().includes(q))
+      )
+      .slice(0, 8);
+  }, [tags, excludeId, q]);
+
+  const handleSelect = (target: Tag) => {
+    const sourceName = tags.find((t) => t.id === excludeId)?.name ?? "тег";
+    if (!confirm(`Об'єднати "${sourceName}" в "${target.name}"? Всі пости будуть перенесені.`)) return;
+    onMerge(target.id);
+  };
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input
+        ref={inputRef}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Знайти тег..."
+        className="h-6 w-40 rounded border border-input bg-background px-2 text-xs"
+      />
+      <div className="absolute left-0 top-full z-20 mt-1 max-h-56 w-64 overflow-y-auto rounded border border-border bg-background shadow-lg">
+        {filtered.length === 0 ? (
+          <div className="px-3 py-2 text-xs text-muted-foreground">Нічого не знайдено</div>
+        ) : (
+          filtered.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => handleSelect(t)}
+              className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs hover:bg-muted"
+            >
+              <span className="font-medium">{t.name}</span>
+              <span className="text-muted-foreground">{t.category.name} · {t.postsCount}</span>
+            </button>
+          ))
+        )}
+      </div>
     </div>
   );
 }
@@ -147,16 +410,12 @@ function PendingSection({ tags, categories, allTags, onRefresh }: {
               <Button size="xs" onClick={() => handleApprove(tag)}>Approve</Button>
               <Button size="xs" variant="destructive" onClick={() => handleReject(tag)}>Reject</Button>
               {mergeTarget === tag.id ? (
-                <select
-                  onChange={(e) => { if (e.target.value) handleMerge(tag.id, e.target.value); }}
-                  defaultValue=""
-                  className="h-6 rounded border border-input bg-background px-1 text-xs"
-                >
-                  <option value="" disabled>Merge into...</option>
-                  {allTags.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name} ({t.category.name})</option>
-                  ))}
-                </select>
+                <TagMergeAutocomplete
+                  tags={allTags}
+                  excludeId={tag.id}
+                  onMerge={(targetId) => handleMerge(tag.id, targetId)}
+                  onCancel={() => setMergeTarget(null)}
+                />
               ) : (
                 <Button size="xs" variant="ghost" onClick={() => setMergeTarget(tag.id)}>Merge</Button>
               )}
@@ -346,11 +605,15 @@ function SortableCategoryRow({ cat, isEditing, editName, editSlug, editError, on
 
 type SortMode = "newest" | "alpha";
 
-function ActiveTagsSection({ groups, categories, allTags, onRefresh }: {
+function ActiveTagsSection({ groups, categories, allTags, onRefresh, selectedTagIds, onToggleTag, onToggleGroup, onClearSelection }: {
   groups: (TagCategory & { tags: Tag[] })[];
   categories: TagCategory[];
   allTags: Tag[];
   onRefresh: () => void;
+  selectedTagIds: Set<string>;
+  onToggleTag: (id: string) => void;
+  onToggleGroup: (tagIds: string[]) => void;
+  onClearSelection: () => void;
 }) {
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
@@ -443,6 +706,9 @@ function ActiveTagsSection({ groups, categories, allTags, onRefresh }: {
     setMergeSource(null);
     onRefresh();
   };
+
+  // Reset selection when filters change
+  useEffect(() => { onClearSelection(); }, [search, sortMode, activeLetter, onClearSelection]);
 
   const isSearching = search.trim().length > 0;
   const searchLower = search.trim().toLowerCase();
@@ -600,18 +866,34 @@ function ActiveTagsSection({ groups, categories, allTags, onRefresh }: {
         const isCollapsed = !isFiltering && collapsed.has(group.id);
         return (
         <div key={group.id} className="mb-4">
-          <button
-            onClick={() => toggleCollapse(group.id)}
-            className="mb-1 flex w-full items-center gap-1.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
-          >
-            <span className="text-[10px]">{isCollapsed ? "▶" : "▼"}</span>
-            {group.name}
-            <span className="font-normal">({group.tags.length})</span>
-          </button>
+          <div className="mb-1 flex items-center gap-1.5">
+            <input
+              type="checkbox"
+              checked={group.tags.length > 0 && group.tags.every((t) => selectedTagIds.has(t.id))}
+              onChange={() => onToggleGroup(group.tags.map((t) => t.id))}
+              className="size-4 shrink-0 accent-current"
+              title="Виділити всі в категорії"
+            />
+            <button
+              onClick={() => toggleCollapse(group.id)}
+              className="flex items-center gap-1.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+            >
+              <span className="text-[10px]">{isCollapsed ? "▶" : "▼"}</span>
+              {group.name}
+              <span className="font-normal">({group.tags.length})</span>
+            </button>
+          </div>
           {!isCollapsed && (
           <div className="space-y-0.5">
             {group.tags.map((tag) => (
-              <div key={tag.id} className="rounded px-3 py-1 text-sm hover:bg-muted/50">
+              <div key={tag.id} className="flex items-start gap-1.5 rounded px-3 py-1 text-sm hover:bg-muted/50">
+                <input
+                  type="checkbox"
+                  checked={selectedTagIds.has(tag.id)}
+                  onChange={() => onToggleTag(tag.id)}
+                  className="mt-1 size-4 shrink-0 accent-current"
+                />
+                <div className="min-w-0 flex-1">
                 {editId === tag.id ? (
                   <div className="flex flex-col gap-2 py-1 sm:flex-row sm:items-center">
                     <input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-7 rounded border border-input bg-background px-2 text-sm" placeholder="Name" />
@@ -639,16 +921,12 @@ function ActiveTagsSection({ groups, categories, allTags, onRefresh }: {
                           Aliases{tag.aliases.length > 0 ? ` (${tag.aliases.length})` : ""}
                         </button>
                         {mergeSource === tag.id ? (
-                          <select
-                            onChange={(e) => { if (e.target.value) handleMerge(tag.id, e.target.value); }}
-                            defaultValue=""
-                            className="h-6 rounded border border-input bg-background px-1 text-xs"
-                          >
-                            <option value="" disabled>Merge into...</option>
-                            {allTags.filter((t) => t.id !== tag.id).map((t) => (
-                              <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                          </select>
+                          <TagMergeAutocomplete
+                            tags={allTags}
+                            excludeId={tag.id}
+                            onMerge={(targetId) => handleMerge(tag.id, targetId)}
+                            onCancel={() => setMergeSource(null)}
+                          />
                         ) : (
                           <button onClick={() => setMergeSource(tag.id)} className="text-xs text-muted-foreground hover:text-foreground">Merge</button>
                         )}
@@ -683,6 +961,7 @@ function ActiveTagsSection({ groups, categories, allTags, onRefresh }: {
                     )}
                   </>
                 )}
+                </div>
               </div>
             ))}
             {group.tags.length === 0 && <p className="px-3 text-xs text-muted-foreground">Немає тегів</p>}

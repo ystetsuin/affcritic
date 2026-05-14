@@ -181,8 +181,8 @@ export function PostTagEditor({ postId, currentTags, onUpdate }: PostTagEditorPr
     <div ref={wrapperRef}>
       {/* Tag chips with remove ✕ */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: tags.length > 0 ? 8 : 0 }}>
-        {tags.map((pt) => (
-          <span key={pt.tag.slug} className="tag-admin">
+        {tags.map((pt, i) => (
+          <span key={`${pt.tag.slug}-${i}`} className="tag-admin">
             {pt.tag.name}
             <button className="tag-remove" onClick={() => handleRemove(pt.tag.slug)} title="Видалити тег">×</button>
           </span>

@@ -1,5 +1,4 @@
 import { prisma } from "./db";
-import { bufferToEmbedding } from "./openai";
 import { findSimilarPosts, SIMILARITY_THRESHOLD } from "./dedup";
 import { logPipeline } from "./logger";
 
@@ -14,30 +13,26 @@ import { logPipeline } from "./logger";
 export async function groupNewPosts(): Promise<Set<string>> {
   const changedGroupIds = new Set<string>();
 
-  const rawPosts = await prisma.rawPost.findMany({
-    where: {
-      processed: false,
-      embedding: { not: null },
-      postId: null,
-    },
-    include: {
-      channel: { select: { username: true } },
-    },
-    orderBy: { postedAt: "asc" },
-  });
+  // Fetch unprocessed raw_posts that have embeddings (raw SQL since embedding is Unsupported)
+  const rawPosts = await prisma.$queryRaw<
+    { id: string; channel_id: string; message_id: number; text: string | null; username: string }[]
+  >`
+    SELECT rp.id, rp.channel_id, rp.message_id, rp.text, c.username
+    FROM raw_posts rp
+    JOIN channels c ON c.id = rp.channel_id
+    WHERE rp.processed = false
+      AND rp.embedding IS NOT NULL
+      AND rp.post_id IS NULL
+    ORDER BY rp.posted_at ASC
+  `;
 
   for (const rawPost of rawPosts) {
-    if (!rawPost.embedding) {
-      console.warn(`[grouping] raw_post ${rawPost.id} has no embedding — skipping`);
-      continue;
-    }
+    // Find similar posts via pgvector (cosine similarity in SQL)
+    const similar = await findSimilarPosts(rawPost.id);
 
-    const embedding = bufferToEmbedding(Buffer.from(rawPost.embedding));
-    const similar = await findSimilarPosts(embedding, rawPost.id);
+    const tgUrl = `https://t.me/${rawPost.username}/${rawPost.message_id}`;
 
-    const tgUrl = `https://t.me/${rawPost.channel.username}/${rawPost.messageId}`;
-
-    // Build top-3 similarities for logging (include all, even below threshold)
+    // Build top-3 similarities for logging
     const topSimilarities = similar.slice(0, 3).map((s) => ({
       group_id: s.postId,
       score: parseFloat(s.similarity.toFixed(4)),
@@ -76,8 +71,8 @@ export async function groupNewPosts(): Promise<Set<string>> {
         prisma.postSource.create({
           data: {
             postId: match.postId,
-            channelId: rawPost.channelId,
-            messageId: rawPost.messageId,
+            channelId: rawPost.channel_id,
+            messageId: rawPost.message_id,
             originalText: rawPost.text,
             tgUrl,
           },
@@ -115,7 +110,7 @@ export async function groupNewPosts(): Promise<Set<string>> {
 }
 
 async function createNewGroup(
-  rawPost: { id: string; channelId: string; messageId: number; text: string | null },
+  rawPost: { id: string; channel_id: string; message_id: number; text: string | null },
   tgUrl: string,
   changedGroupIds: Set<string>,
 ): Promise<string> {
@@ -130,8 +125,8 @@ async function createNewGroup(
     await tx.postSource.create({
       data: {
         postId: post.id,
-        channelId: rawPost.channelId,
-        messageId: rawPost.messageId,
+        channelId: rawPost.channel_id,
+        messageId: rawPost.message_id,
         originalText: rawPost.text,
         tgUrl,
       },

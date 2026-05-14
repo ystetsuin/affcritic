@@ -1,5 +1,4 @@
 import { prisma } from "./db";
-import type { Prisma } from "../generated/prisma/client";
 import { processUnembeddedPosts, generateSummaryForGroup, checkSummaryQuality } from "./openai";
 import { groupNewPosts } from "./grouping";
 import { getActiveTagsList } from "./prompts";
@@ -87,20 +86,27 @@ export async function runPipeline(): Promise<PipelineResult> {
   }
 
   // 6. Mark processed: posts with groups (excluding failed GPT), AND text-less posts (media-only)
-  const successCondition: Prisma.RawPostWhereInput = {
-    embedding: { not: null },
-    postId: { not: null },
-  };
-  if (failedGroupIds.size > 0) {
-    successCondition.postId = { notIn: Array.from(failedGroupIds) };
+  // Uses raw SQL because embedding column is pgvector (Unsupported in Prisma)
+  const failedIds = Array.from(failedGroupIds);
+  if (failedIds.length > 0) {
+    await prisma.$executeRaw`
+      UPDATE raw_posts SET processed = true
+      WHERE processed = false AND (
+        (embedding IS NOT NULL AND post_id IS NOT NULL AND post_id != ALL(${failedIds}::uuid[]))
+        OR text IS NULL
+        OR text = ''
+      )
+    `;
+  } else {
+    await prisma.$executeRaw`
+      UPDATE raw_posts SET processed = true
+      WHERE processed = false AND (
+        (embedding IS NOT NULL AND post_id IS NOT NULL)
+        OR text IS NULL
+        OR text = ''
+      )
+    `;
   }
-  await prisma.rawPost.updateMany({
-    where: {
-      processed: false,
-      OR: [successCondition, { text: null }, { text: "" }],
-    },
-    data: { processed: true },
-  });
 
   // Count pending tags created in this run (approximate: created in last few minutes)
   const recentCutoff = new Date(startTime);
