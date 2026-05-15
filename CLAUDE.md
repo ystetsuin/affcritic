@@ -505,4 +505,4 @@ affcritic/
 27. Feed-сторінки: один `<main>` з CSS-класом `.page-layout` (grid на desktop, collapsed на mobile). НЕ дублювати DOM для desktop/mobile.
 28. globals.css: кастомні стилі ОБОВ'ЯЗКОВО розміщувати ПЕРЕД `@theme inline` блоком — стилі після `@theme` не підхоплюються Turbopack
 29. Stats collector (`stats_collector.py`) — окремий від main scraper. Збирає subscribers + avatar + bio. Не чіпає raw_posts. Свій cron (раз на добу).
-30. Аватари каналів зберігаються в `public/avatars/` (не комітяться, в `.gitignore`). Завантажуються stats_collector через Telethon `download_profile_photo`.
+30. Аватари каналів зберігаються в `public/avatars/`, **комітяться в git** (видалено з `.gitignore`), щоб Hostinger auto-deploy їх викладав. `stats_cron.sh` автоматично робить `git add` + `commit` + `push` після кожного stats run на Mac. Завантажуються stats_collector через Telethon `download_profile_photo`.

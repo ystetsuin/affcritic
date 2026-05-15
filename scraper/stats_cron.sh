@@ -34,3 +34,17 @@ fi
 echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] Starting stats collector"
 cd "$PROJECT_DIR"
 python3 scraper/stats_collector.py
+
+# Auto-commit нових avatars в git → Hostinger auto-deploy їх викладе
+if [ -d "$PROJECT_DIR/.git" ]; then
+    cd "$PROJECT_DIR"
+    if ! git diff --quiet -- public/avatars/ 2>/dev/null \
+       || [ -n "$(git status --porcelain public/avatars/ 2>/dev/null)" ]; then
+        echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] Committing avatar updates"
+        git add public/avatars/
+        git commit -m "chore: update channel avatars" || true
+        git push origin main 2>&1 | tail -3 || echo "[warn] push failed (offline?)"
+    else
+        echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] No avatar changes"
+    fi
+fi

@@ -1,8 +1,9 @@
 # dependencies
 node_modules
 
-# generated avatars (from stats_collector)
-public/avatars/
+# channel avatars: тепер комітимо в git (auto-commit з stats_cron.sh),
+# щоб Hostinger auto-deploy їх викладав. До 7-10MB прийнятно без LFS.
+
 /.pnp
 .pnp.*
 
